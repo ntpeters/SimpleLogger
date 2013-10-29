@@ -7,6 +7,9 @@
      Last Updated: Oct 2013
 */
 
+// Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
+#define LOG_LOGGER 4
+
 #include "simplog.h"
 #include <stdio.h>
 #include <time.h>
@@ -19,9 +22,9 @@
 #include <stdbool.h>
 
 // Logger settings constants
-static int          dbgLevel    = LOG_INFO;         // Default Logging level
+static int          dbgLevel    = LOG_DEBUG;        // Default Logging level
 static const char*  logFile     = "default.log";    // Default log file name
-static bool         silentMode  = true;             // Default silent mode setting
+static bool         silentMode  = false;            // Default silent mode setting
 
 // Private function prototypes
 static char* getDateString();
@@ -99,6 +102,8 @@ void writeLog( int loglvl, const char* str, ... ) {
             sprintf( msg, "%s\tDEBUG : ", date );      // 2: Debug
         } else if( loglvl == LOG_VERBOSE && dbgLevel >= LOG_VERBOSE ) {
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
+        } else if( loglvl == LOG_LOGGER && dbgLevel >= LOG_DEBUG ) {
+            sprintf( msg, "%s\tLOG   : ", date );
         } else {
             // Don't print anything
             valid = false;
@@ -141,16 +146,17 @@ void writeLog( int loglvl, const char* str, ... ) {
 void setLogDebugLevel( int level ) {
     if( level >= LOG_INFO && level <= LOG_VERBOSE ) {
          dbgLevel = level;
+         writeLog( LOG_LOGGER, "Debug level set to %d", level );
     } else {
         char* error = (char*)malloc(500);
-        sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, dbgLevel );
+        sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, LOG_INFO );
         sprintf( &error[ strlen( error ) ], "\t\t\t\tValid Debug Levels:\n");
         sprintf( &error[ strlen( error ) ], "\t\t\t\t0  : Info\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t1  : Warnings\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t2  : Debug\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t3  : Debug-Verbose" );
 
-        writeLog( LOG_ERROR, error );
+        writeLog( LOG_LOGGER, error );
         free( error );
     }
 }
@@ -163,6 +169,7 @@ void setLogDebugLevel( int level ) {
 */
 void setLogFile( const char* file ) {
     logFile = file;
+    writeLog( LOG_LOGGER, "Log file set to '%s'", logFile );
 }
 
 /*
@@ -171,11 +178,11 @@ void setLogFile( const char* file ) {
     Log output will continue normally.
 
     Input:
-    bool silent - Desired state of silent mode: false = Disabled, true = Enabled (default)
+    bool silent - Desired state of silent mode: false = Disabled (default), true = Enabled
 */
 void setLogSilentMode( bool silent ) {
+    writeLog( LOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
     silentMode = silent;
-    writeLog( LOG_DEBUG, "Silent mode %s", silent ? "enabled" : "disabled" );
 }
 
 /*
@@ -194,7 +201,7 @@ void flushLog() {
     } else {
         // Print error message if silent mode is not enabled
         if( !silentMode ) {
-            printf( "%s\tERROR : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
+            printf( "%s\tLOG   : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
             fflush(stdout); 
         }
     }
@@ -202,6 +209,8 @@ void flushLog() {
     // Create new empty log file
     int log = open( logFile, O_CREAT | O_RDWR, 0664 );
     close( log );
+
+    writeLog( LOG_LOGGER, "Log file '%s' cleared", logFile );
 }
 
 /*
