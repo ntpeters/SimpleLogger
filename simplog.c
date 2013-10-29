@@ -1,6 +1,6 @@
 /*
      A very basic logger for output of messages at various logging levels
-     with date/time stamp to standard out and a defined log file.
+     with date/time stamp to standard out/err and a defined log file.
 
      Author: Nate Peterson
      Created: June 2013
@@ -19,15 +19,15 @@
 #include <stdbool.h>
 
 // Logger settings constants
-static int          dbgLevel    = LOG_VERBOSE;
-static const char*  logFile     = "default.log";
-static bool         silentMode  = false;
+static int          dbgLevel    = LOG_INFO;         // Default Logging level
+static const char*  logFile     = "default.log";    // Default log file name
+static bool         silentMode  = true;             // Default silent mode setting
 
 // Private function prototypes
 static char* getDateString();
 
 /*
-    Writes output to defined logfile and standard out with
+    Writes output to defined logfile and standard out/err with
     date/time stamp and associated log level.
     
     Can take formatted string like printf, with a variable sized list of
@@ -39,16 +39,16 @@ static char* getDateString();
 
     Logging Levels:
     -2 : Fatal          - A fatal error has occured: program will exit immediately
-    -1 : Error          - An error has occured: program will typically not exit
+    -1 : Error          - An error has occured: program may not exit
     0  : Info           - Nessessary information regarding program operation
     1  : Warnings       - Any circumstance that may not affect normal operation
     2  : Debug          - Standard debug messages
     3  : Debug-Verbose  - All debug messages
 
     Input:
-    int loglvl - The desired output logging level.  See above table for levels.
-    char* str  - The message to be output. This is a format string.
-    ...        - Variable length list of arguments to be used with the format string.
+    int loglvl      - The desired output logging level.  See above table for levels.
+    const char* str - The message to be output. This is a format string.
+    ...             - Variable length list of arguments to be used with the format string (optional).
 */
 void writeLog( int loglvl, const char* str, ... ) {
     // Open the log file
@@ -66,9 +66,10 @@ void writeLog( int loglvl, const char* str, ... ) {
     int msgSize = strlen( str ) + strlen ( date ) + strlen( strerror( errno ) ) + 10;  // 10 char buffer to prevent overflow
     char* msg = (char*)malloc( msgSize + max_va_list_size );
 
+    // Prepare message based on logging level and debug level
     if( loglvl < LOG_INFO ){
         if( loglvl == LOG_FATAL ) {
-               sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
+            sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
         } else if( loglvl == LOG_ERROR ) {
             sprintf( msg, "%s\tERROR : ", date );      // -1: Error
         }
@@ -87,6 +88,7 @@ void writeLog( int loglvl, const char* str, ... ) {
             write( STDERR_FILENO, msg, strlen( msg ) );
         }
     } else {
+        // Used to check if a valid combination of log level and debug level exists
         bool valid = true;
 
         if( loglvl == LOG_INFO ) {
@@ -157,7 +159,7 @@ void setLogDebugLevel( int level ) {
     Sets the filename for log output.
 
     Input:
-    char* file - desired log output file
+    const char* file - desired log output file
 */
 void setLogFile( const char* file ) {
     logFile = file;
@@ -169,11 +171,11 @@ void setLogFile( const char* file ) {
     Log output will continue normally.
 
     Input:
-    int silent - Desired state of silent mode: 0 = Disabled, 1 = Enabled (default)
+    bool silent - Desired state of silent mode: false = Disabled, true = Enabled (default)
 */
 void setLogSilentMode( bool silent ) {
     silentMode = silent;
-    writeLog( LOG_DEBUG, "Silent mode enabled" );
+    writeLog( LOG_DEBUG, "Silent mode %s", silent ? "enabled" : "disabled" );
 }
 
 /*
@@ -190,8 +192,11 @@ void flushLog() {
             exit( -1 );
         }
     } else {
-        printf( "%s\tERROR : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
-        fflush(stdout);
+        // Print error message if silent mode is not enabled
+        if( !silentMode ) {
+            printf( "%s\tERROR : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
+            fflush(stdout); 
+        }
     }
 
     // Create new empty log file
@@ -202,12 +207,18 @@ void flushLog() {
 /*
     Gets the current date/time and returns it as a string of the form:
     [yyyy-mm-dd hh:mm:ss]
+
+    Returned char pointer must be freed.
 */
 static char* getDateString() {
-    time_t t = time ( NULL );
+    // Initialize and get current time
+    time_t t = time( NULL );
     struct tm *timeinfo = localtime( &t );
+
+    // Allocate space for date string
     char* date = (char*)malloc( 100 );
 
+    // Get each component of time struct that we care about
     int year    = timeinfo->tm_year + 1900;
     int month   = timeinfo->tm_mon + 1;
     int day     = timeinfo->tm_mday;
@@ -245,6 +256,4 @@ static char* getDateString() {
     }
 
     return date;
-
-    // TODO: Simplify
 }
