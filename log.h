@@ -11,12 +11,12 @@
 #define SIMPLOG_H
 
 // Define logging levels
-#define LOG_FATAL	-2
-#define LOG_ERROR	-1
-#define LOG_INFO	0
-#define LOG_WARN	1
-#define LOG_DEBUG	2
-#define LOG_VERBOSE	3
+#define LOG_FATAL    -2
+#define LOG_ERROR    -1
+#define LOG_INFO     0
+#define LOG_WARN     1
+#define LOG_DEBUG    2
+#define LOG_VERBOSE  3
 
 #include <stdbool.h>
 
