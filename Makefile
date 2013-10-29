@@ -1,9 +1,12 @@
 CC = clang
 CFLAGS = -Wall -c
-LIBNAME = libsimplog.a
-SOURCE = log.c
-OBJ = log.o
+LIB = libsimplog.a
+SOURCE = simplog.c
+OBJ = simplog.o
 
 all:
 	$(CC) $(CFLAGS) $(SOURCE)
-	ar -cvq $(LIBNAME) $(OBJ)
+	ar -cvq $(LIB) $(OBJ)
+
+clean:
+	rm -f $(LIB)
