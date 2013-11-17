@@ -24,7 +24,7 @@
 // Logger settings constants
 static int          dbgLevel    = LOG_DEBUG;        // Default Logging level
 static const char*  logFile     = "default.log";    // Default log file name
-static bool         silentMode  = false;            // Default silent mode setting
+static bool         silentMode  = false;             // Default silent mode setting
 
 // Private function prototypes
 static char* getDateString();
@@ -74,7 +74,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         if( loglvl == LOG_FATAL ) {
             sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
         } else if( loglvl == LOG_ERROR ) {
-            sprintf( msg, "%s\tERROR : ", date );      // -1: Error
+            sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
         vsprintf( msg + strlen( msg ), str, args );
@@ -84,7 +84,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         if( errno ) {
             // Used to ensure errno output is aligned correctly
             const char* dateLengthSpacing = "                     ";
-            sprintf( msg + strlen( msg ),"%s\terrno : %s\n", dateLengthSpacing, strerror( errno ) );
+            sprintf( msg + strlen( msg), "%s\terrno : %s\n", dateLengthSpacing, strerror( errno ) );
         }
         // Write message to log
         write( log, msg, strlen( msg ) );
@@ -96,6 +96,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         // Used to check if a valid combination of log level and debug level exists
         bool valid = true;
 
+        // Check loglvl/dbgLevel and add appropriate name to message
         if( loglvl == LOG_INFO ) {
             sprintf( msg, "%s\tINFO  : ", date );      // 0: Info
         } else if( loglvl == LOG_WARN && dbgLevel >= LOG_WARN ) {
@@ -128,27 +129,31 @@ void writeLog( int loglvl, const char* str, ... ) {
     // free args list
     va_end( args );
 
+    // close file
     close( log );
+
+    // free other variables
     free( date );
     free( msg );
 }
 
 /*
-   Sets the desired debug level for writing logs.
+    Sets the desired debug level for writing logs.
 
-   Debug Levels:
-0  : Info           - Nessessary information regarding program operation
-1  : Warnings       - Any circumstance that may not affect normal operation
-2  : Debug          - Standard debug messages
-3  : Debug-Verbose  - All debug messages
+    Debug Levels:
+    0  : Info           - Nessessary information regarding program operation
+    1  : Warnings       - Any circumstance that may not affect normal operation
+    2  : Debug          - Standard debug messages
+    3  : Debug-Verbose  - All debug messages
 
-Input:
-int level - desired debug level
+    Input:
+    int level - desired debug level
 */
 void setLogDebugLevel( int level ) {
+    // Check if the provided debug level is valid, else print error message
     if( level >= LOG_INFO && level <= LOG_VERBOSE ) {
-        dbgLevel = level;
-        writeLog( LOG_LOGGER, "Debug level set to %d", level );
+         dbgLevel = level;
+         writeLog( LOG_LOGGER, "Debug level set to %d", level );
     } else {
         char* error = (char*)malloc(500);
         sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, LOG_INFO );
@@ -164,10 +169,10 @@ void setLogDebugLevel( int level ) {
 }
 
 /*
-   Sets the filename for log output.
+    Sets the filename for log output.
 
-Input:
-const char* file - desired log output file
+    Input:
+    const char* file - desired log output file
 */
 void setLogFile( const char* file ) {
     logFile = file;
@@ -175,22 +180,22 @@ void setLogFile( const char* file ) {
 }
 
 /*
-   Enables/Disables silent mode.
-   When silent mode is enabled, no output will be written to standard out.
-   Log output will continue normally.
+    Enables/Disables silent mode.
+    When silent mode is enabled, no output will be written to standard out.
+    Log output will continue normally.
 
-Input:
-bool silent - Desired state of silent mode: false = Disabled (default), true = Enabled
+    Input:
+    bool silent - Desired state of silent mode: false = Disabled (default), true = Enabled
 */
 void setLogSilentMode( bool silent ) {
-    writeLog( LOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
     silentMode = silent;
+    writeLog( LOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
 }
 
 /*
-   Flushes the contents of the logfile by deleting it and recreating
-   a new empty logfile.
-   */
+    Flushes the contents of the logfile by deleting it and recreating
+    a new empty logfile of the same name.
+*/
 void flushLog() {
     // Check if file exists
     if( !access( logFile, F_OK ) ) {
@@ -216,11 +221,11 @@ void flushLog() {
 }
 
 /*
-   Gets the current date/time and returns it as a string of the form:
-   [yyyy-mm-dd hh:mm:ss]
+    Gets the current date/time and returns it as a string of the form:
+    [yyyy-mm-dd hh:mm:ss]
 
-   Returned char pointer must be freed.
-   */
+    Returned char pointer must be freed.
+*/
 static char* getDateString() {
     // Initialize and get current time
     time_t t = time( NULL );
