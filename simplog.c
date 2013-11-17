@@ -4,7 +4,7 @@
 
      Author: Nate Peterson
      Created: June 2013
-     Last Updated: Oct 2013
+     Last Updated: Nov 2013
 */
 
 // Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
