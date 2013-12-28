@@ -4,7 +4,7 @@
 
      Author: Nate Peterson
      Created: June 2013
-     Last Updated: Nov 2013
+     Last Updated: Dec 2013
 */
 
 #ifndef SIMPLOG_H
@@ -25,11 +25,14 @@ extern "C" {
 #include <stdbool.h>
 
 // Public functions
-void writeLog( int loglvl, const char* str, ... );
-void setLogDebugLevel( int level );
-void setLogFile( const char* file );
-void setLogSilentMode( bool silent );
-void flushLog();
+typedef struct {
+	void ( *const writeLog )( int loglvl, const char* str, ... );
+	void ( *const setLogDebugLevel )( int level );
+	void ( *const setLogFile )( const char* file );
+	void ( *const setLogSilentMode )( bool silent );
+	void ( *const flushLog )( void );
+} simplog_namespace;
+extern simplog_namespace const simplog;
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@
 
      Author: Nate Peterson
      Created: June 2013
-     Last Updated: Nov 2013
+     Last Updated: Dec 2013
 */
 
 // Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
@@ -273,3 +273,6 @@ static char* getDateString() {
 
     return date;
 }
+
+// Puting all public functions into their own "namespace"
+simplog_namespace const simplog = { writeLog, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog };
