@@ -10,6 +10,10 @@
 #ifndef SIMPLOG_H
 #define SIMPLOG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define logging levels
 #define LOG_FATAL    -2    // A fatal error has occured: program will exit immediately
 #define LOG_ERROR    -1    // An error has occured: program may not exit
@@ -26,5 +30,9 @@ void setLogDebugLevel( int level );
 void setLogFile( const char* file );
 void setLogSilentMode( bool silent );
 void flushLog();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
