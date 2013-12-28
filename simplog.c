@@ -8,9 +8,9 @@
 */
 
 // Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
-#define LOG_LOGGER 4
+#define LOG_LOGGER  4
+#define LOG_TRACE   5
 
-#include "simplog.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -20,6 +20,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <execinfo.h>
+
+#include "simplog.h"
 
 // Logger settings constants
 static int          dbgLevel    = LOG_DEBUG;        // Default Logging level
@@ -107,6 +110,8 @@ void writeLog( int loglvl, const char* str, ... ) {
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
         } else if( loglvl == LOG_LOGGER && dbgLevel >= LOG_DEBUG ) {
             sprintf( msg, "%s\tLOG   : ", date );
+        } else if( loglvl == LOG_TRACE && dbgLevel >= LOG_DEBUG ) {
+            sprintf( msg, "%s\tTRACE : ", date );
         } else {
             // Don't print anything
             valid = false;
@@ -135,6 +140,52 @@ void writeLog( int loglvl, const char* str, ... ) {
     // free other variables
     free( date );
     free( msg );
+}
+
+/*
+    Prints the stacktrack to logs for the current location in the program.
+
+    Set to a max of 20 lines of the stacktrace for output.
+*/
+void writeStackTrace() {
+    // max lines in backtrace
+    static const int max_backtrace_size = 20;
+
+    // holds addresses for backtrace functions
+    void* backtrace_addresses[max_backtrace_size];
+    // size of backtrace
+    size_t backtrace_size = backtrace( backtrace_addresses, max_backtrace_size );
+
+    // string descriptions of each backtrace address
+    char** backtrace_strings = backtrace_symbols( backtrace_addresses, backtrace_size );
+
+    // output message to be composed
+    char* message = ( char* )malloc( sizeof( backtrace_strings ) * 255 );
+
+    // intermittent offset during message construction
+    int offset = 0;
+    // contstructing the message
+    for( int i = 0; i < backtrace_size; i++ ) {
+        // length of the current string
+        int string_length = strlen( backtrace_strings[i] );
+
+        // copy the current string into the message
+        strncpy( message + offset, backtrace_strings[i], string_length );
+        // advance the offset by the string length
+        offset += string_length;
+
+        // add newline and tabs for proper output alignment
+        strncpy( message + offset, "\n\t\t\t\t", 5 );
+        // advance the offset for the added alignment
+        offset += 5;
+    }
+
+    // write the final message to the logs
+    writeLog( LOG_TRACE, "%s", message );
+
+    // free message and backtrace variables
+    free( message );
+    free( backtrace_strings );
 }
 
 /*
@@ -275,4 +326,4 @@ static char* getDateString() {
 }
 
 // Puting all public functions into their own "namespace"
-simplog_namespace const simplog = { writeLog, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog };
+simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog };

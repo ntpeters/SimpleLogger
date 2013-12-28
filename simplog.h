@@ -27,6 +27,7 @@ extern "C" {
 // Public functions
 typedef struct {
 	void ( *const writeLog )( int loglvl, const char* str, ... );
+	void ( *const writeStackTrace )( void );
 	void ( *const setLogDebugLevel )( int level );
 	void ( *const setLogFile )( const char* file );
 	void ( *const setLogSilentMode )( bool silent );
