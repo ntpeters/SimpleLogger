@@ -17,12 +17,12 @@ extern "C" {
 #include <stdbool.h>
 
 // Define logging levels
-#define LOG_FATAL    -2    // A fatal error has occured: program will exit immediately
-#define LOG_ERROR    -1    // An error has occured: program may not exit
-#define LOG_INFO     0     // Nessessary information regarding program operation
-#define LOG_WARN     1     // Any circumstance that may not affect normal operation
-#define LOG_DEBUG    2     // Standard debug messages
-#define LOG_VERBOSE  3     // All debug messages
+#define SIMPLOG_FATAL    -2    // A fatal error has occured: program will exit immediately
+#define SIMPLOG_ERROR    -1    // An error has occured: program may not exit
+#define SIMPLOG_INFO     0     // Nessessary information regarding program operation
+#define SIMPLOG_WARN     1     // Any circumstance that may not affect normal operation
+#define SIMPLOG_DEBUG    2     // Standard debug messages
+#define SIMPLOG_VERBOSE  3     // All debug messages
 
 // Public functions
 typedef struct {

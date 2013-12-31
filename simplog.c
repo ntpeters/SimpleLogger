@@ -20,14 +20,14 @@
 
 #include "simplog.h"
 
-// Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
-#define LOG_LOGGER  4
-// Used for printing stack trace. Prints if debug level is LOG_DEBUG or higher
-#define LOG_TRACE   5
+// Used for printing from within the logger. Prints if debug level is SIMPLOG_DEBUG or higher
+#define SIMPLOG_LOGGER  4
+// Used for printing stack trace. Prints if debug level is SIMPLOG_DEBUG or higher
+#define SIMPLOG_TRACE   5
 
 
 // Logger settings constants
-static int          dbgLevel    = LOG_DEBUG;        // Default Logging level
+static int          dbgLevel    = SIMPLOG_DEBUG;        // Default Logging level
 static const char*  logFile     = "default.log";    // Default log file name
 static bool         silentMode  = false;             // Default silent mode setting
 
@@ -50,7 +50,7 @@ static char* getDateString();
     -1 : Error          - An error has occured: program may not exit
     0  : Info           - Nessessary information regarding program operation
     1  : Warnings       - Any circumstance that may not affect normal operation
-    2  : Debug          - Standard debug messages
+    2  : Debug          - Standard debug messages (default)
     3  : Debug-Verbose  - All debug messages
 
     Input:
@@ -84,10 +84,10 @@ void writeLog( int loglvl, const char* str, ... ) {
     char* msg = (char*)malloc( msgSize );
 
     // Prepare message based on logging level and debug level
-    if( loglvl < LOG_INFO ){
-        if( loglvl == LOG_FATAL ) {
+    if( loglvl < SIMPLOG_INFO ){
+        if( loglvl == SIMPLOG_FATAL ) {
             sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
-        } else if( loglvl == LOG_ERROR ) {
+        } else if( loglvl == SIMPLOG_ERROR ) {
             sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
@@ -111,17 +111,17 @@ void writeLog( int loglvl, const char* str, ... ) {
         bool valid = true;
 
         // Check loglvl/dbgLevel and add appropriate name to message
-        if( loglvl == LOG_INFO ) {
+        if( loglvl == SIMPLOG_INFO ) {
             sprintf( msg, "%s\tINFO  : ", date );      // 0: Info
-        } else if( loglvl == LOG_WARN && dbgLevel >= LOG_WARN ) {
+        } else if( loglvl == SIMPLOG_WARN && dbgLevel >= SIMPLOG_WARN ) {
             sprintf( msg, "%s\tWARN  : ", date );      // 1: Warning
-        } else if( loglvl == LOG_DEBUG && dbgLevel >= LOG_DEBUG ) {
+        } else if( loglvl == SIMPLOG_DEBUG && dbgLevel >= SIMPLOG_DEBUG ) {
             sprintf( msg, "%s\tDEBUG : ", date );      // 2: Debug
-        } else if( loglvl == LOG_VERBOSE && dbgLevel >= LOG_VERBOSE ) {
+        } else if( loglvl == SIMPLOG_VERBOSE && dbgLevel >= SIMPLOG_VERBOSE ) {
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
-        } else if( loglvl == LOG_LOGGER && dbgLevel >= LOG_DEBUG ) {
+        } else if( loglvl == SIMPLOG_LOGGER && dbgLevel >= SIMPLOG_DEBUG ) {
             sprintf( msg, "%s\tLOG   : ", date );
-        } else if( loglvl == LOG_TRACE && dbgLevel >= LOG_DEBUG ) {
+        } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
             sprintf( msg, "%s\tTRACE : ", date );
         } else {
             // Don't print anything
@@ -158,7 +158,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         // get how many bytes the output was truncated by
         int truncated_size = va_string_size - ( strlen( str ) + max_va_list_size );
         // output message notifying the user of truncation and amount
-        writeLog( LOG_LOGGER, "Previous message truncated by %d bytes to fit into buffer", truncated_size );
+        writeLog( SIMPLOG_LOGGER, "Previous message truncated by %d bytes to fit into buffer", truncated_size );
     }
 }
 
@@ -222,7 +222,7 @@ void writeStackTrace() {
     }
 
     // write the final message to the logs
-    writeLog( LOG_TRACE, "%s", message );
+    writeLog( SIMPLOG_TRACE, "%s", message );
 
     // free message and backtrace variables
     free( message );
@@ -235,7 +235,7 @@ void writeStackTrace() {
     Debug Levels:
     0  : Info           - Nessessary information regarding program operation
     1  : Warnings       - Any circumstance that may not affect normal operation
-    2  : Debug          - Standard debug messages
+    2  : Debug          - Standard debug messages (default)
     3  : Debug-Verbose  - All debug messages
 
     Input:
@@ -243,19 +243,19 @@ void writeStackTrace() {
 */
 void setLogDebugLevel( int level ) {
     // Check if the provided debug level is valid, else print error message
-    if( level >= LOG_INFO && level <= LOG_VERBOSE ) {
+    if( level >= SIMPLOG_INFO && level <= SIMPLOG_VERBOSE ) {
          dbgLevel = level;
-         writeLog( LOG_LOGGER, "Debug level set to %d", level );
+         writeLog( SIMPLOG_LOGGER, "Debug level set to %d", level );
     } else {
         char* error = (char*)malloc(500);
-        sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, LOG_INFO );
+        sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, SIMPLOG_DEBUG );
         sprintf( &error[ strlen( error ) ], "\t\t\t\tValid Debug Levels:\n");
         sprintf( &error[ strlen( error ) ], "\t\t\t\t0  : Info\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t1  : Warnings\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t2  : Debug\n" );
         sprintf( &error[ strlen( error ) ], "\t\t\t\t3  : Debug-Verbose" );
 
-        writeLog( LOG_LOGGER, error );
+        writeLog( SIMPLOG_LOGGER, error );
         free( error );
     }
 }
@@ -268,7 +268,7 @@ void setLogDebugLevel( int level ) {
 */
 void setLogFile( const char* file ) {
     logFile = file;
-    writeLog( LOG_LOGGER, "Log file set to '%s'", logFile );
+    writeLog( SIMPLOG_LOGGER, "Log file set to '%s'", logFile );
 }
 
 /*
@@ -281,7 +281,7 @@ void setLogFile( const char* file ) {
 */
 void setLogSilentMode( bool silent ) {
     silentMode = silent;
-    writeLog( LOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
+    writeLog( SIMPLOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
 }
 
 /*
@@ -309,7 +309,7 @@ void flushLog() {
     int log = open( logFile, O_CREAT | O_RDWR, 0664 );
     close( log );
 
-    writeLog( LOG_LOGGER, "Log file '%s' cleared", logFile );
+    writeLog( SIMPLOG_LOGGER, "Log file '%s' cleared", logFile );
 }
 
 /*
