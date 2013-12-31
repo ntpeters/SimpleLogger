@@ -7,10 +7,6 @@
      Last Updated: Dec 2013
 */
 
-// Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
-#define LOG_LOGGER  4
-#define LOG_TRACE   5
-
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -23,6 +19,12 @@
 #include <execinfo.h>
 
 #include "simplog.h"
+
+// Used for printing from within the logger. Prints if debug level is LOG_DEBUG or higher
+#define LOG_LOGGER  4
+// Used for printing stack trace. Prints if debug level is LOG_DEBUG or higher
+#define LOG_TRACE   5
+
 
 // Logger settings constants
 static int          dbgLevel    = LOG_DEBUG;        // Default Logging level
@@ -57,20 +59,29 @@ static char* getDateString();
     ...             - Variable length list of arguments to be used with the format string (optional).
 */
 void writeLog( int loglvl, const char* str, ... ) {
+    // Prepare variable length args list
+    va_list args;
+    va_start( args, str );
+
+    // No way to determine size of list
+    // This will hold a stacktrace of 15 lines plus a message
+    int max_va_list_size = 4095;
+
+    // Allocate args string variable
+    char* va_msg = (char*)malloc( strlen( str ) + max_va_list_size );
+
+    // Construct final args string
+    int va_string_size = vsnprintf( va_msg, strlen( str ) + max_va_list_size, str, args );
+
     // Open the log file
     int log = open( logFile, O_CREAT | O_APPEND | O_RDWR, 0664 );
 
     // Get current date/time
     char* date = getDateString();
 
-    // Prepare variable length args list
-    va_list args;
-    va_start( args, str );
-    int max_va_list_size = 250;  // No way to determine size of list.  250 should be a good ceiling.
-
     // Allocate message variable
-    int msgSize = strlen( str ) + strlen ( date ) + strlen( strerror( errno ) ) + 10;  // 10 char buffer to prevent overflow
-    char* msg = (char*)malloc( msgSize + max_va_list_size );
+    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 10;  // 10 char buffer to prevent overflow
+    char* msg = (char*)malloc( msgSize );
 
     // Prepare message based on logging level and debug level
     if( loglvl < LOG_INFO ){
@@ -80,8 +91,8 @@ void writeLog( int loglvl, const char* str, ... ) {
             sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
-        vsprintf( msg + strlen( msg ), str, args );
-        sprintf( msg + strlen( msg ), "\n" );
+        // Append args string to output message
+        sprintf( msg + strlen( msg ), "%s\n", va_msg );
 
         // If errno is anything other than "Success", write it to the log.
         if( errno ) {
@@ -119,8 +130,8 @@ void writeLog( int loglvl, const char* str, ... ) {
 
         // Only print if there is a valid match of log level and debug level
         if( valid ) {
-            vsprintf( msg + strlen( msg ), str, args );
-            sprintf( msg + strlen( msg ), "\n" );
+            // Append args string to output message
+            sprintf( msg + strlen( msg ), "%s\n", va_msg );
 
             // Write message to log
             write( log, msg, strlen( msg ) );
@@ -140,16 +151,26 @@ void writeLog( int loglvl, const char* str, ... ) {
     // free other variables
     free( date );
     free( msg );
+    free( va_msg );
+
+    // Check if the output was truncated
+    if( va_string_size > ( strlen( str ) + max_va_list_size ) ) {
+        // get how many bytes the output was truncated by
+        int truncated_size = va_string_size - ( strlen( str ) + max_va_list_size );
+        // output message notifying the user of truncation and amount
+        writeLog( LOG_LOGGER, "Previous message truncated by %d bytes to fit into buffer", truncated_size );
+    }
 }
 
 /*
-    Prints the stacktrack to logs for the current location in the program.
+    Prints the stacktrace to logs for the current location in the program.
+    Most recent calls appear first.
 
-    Set to a max of 20 lines of the stacktrace for output.
+    Set to a max of 15 lines of the stacktrace for output.
 */
 void writeStackTrace() {
     // max lines in backtrace
-    static const int max_backtrace_size = 20;
+    static const int max_backtrace_size = 15;
 
     // holds addresses for backtrace functions
     void* backtrace_addresses[max_backtrace_size];
@@ -159,25 +180,45 @@ void writeStackTrace() {
     // string descriptions of each backtrace address
     char** backtrace_strings = backtrace_symbols( backtrace_addresses, backtrace_size );
 
+    // max size for the message, assuming individual strings with max of 255 bytes
+    int max_message_size = sizeof( backtrace_strings ) * 255;
+
     // output message to be composed
-    char* message = ( char* )malloc( sizeof( backtrace_strings ) * 255 );
+    char* message = ( char* )malloc( max_message_size );
 
     // intermittent offset during message construction
     int offset = 0;
-    // contstructing the message
-    for( int i = 0; i < backtrace_size; i++ ) {
+    // contstructing the message. starting at index 1 to omit this call
+    for( int i = 1; i < backtrace_size; i++ ) {
         // length of the current string
         int string_length = strlen( backtrace_strings[i] );
 
+        // ensure the message buffer is not overflowed
+        if( offset + string_length > max_message_size ) {
+            // add notice of truncation to the message if there is room
+            if( offset + 21 < max_message_size ) {
+                strncpy( message + offset, "[backtrace truncated]", 21 );
+            }
+            // break out of construction prematurely to prevent overflow
+            break;
+        }
+
         // copy the current string into the message
         strncpy( message + offset, backtrace_strings[i], string_length );
-        // advance the offset by the string length
         offset += string_length;
 
-        // add newline and tabs for proper output alignment
-        strncpy( message + offset, "\n\t\t\t\t", 5 );
-        // advance the offset for the added alignment
-        offset += 5;
+        // don't add newline and padding to last trace
+        if( i < ( backtrace_size - 1 ) ) {
+            // add newline and tabs for proper output alignment
+            strncpy( message + offset, "\n\t\t\t\t", 5 );
+            offset += 5;
+        }
+    }
+
+    // if the buffer has been filled, ensure it is null terminated
+    if( offset >= max_message_size - 1 ) {
+            // add null byte to the end of the message
+            message[offset] = '\0';
     }
 
     // write the final message to the logs
