@@ -31,8 +31,8 @@
 #define COL_ERROR   "\x1B[91m"  // Light Red
 #define COL_INFO    "\x1B[37m"  // White
 #define COL_WARN    "\x1B[33m"  // Yellow
-#define COL_DEBUG   "\x1B[34m"  // Blue
-#define COL_VERBOSE "\x1B[94m"  // Light Blue
+#define COL_DEBUG   "\x1B[94m"  // Light Blue
+#define COL_VERBOSE "\x1B[36m"  // Cyan
 #define COL_LOGGER  "\x1B[90m"  // Dark Grey
 #define COL_TRACE   "\x1B[95m"  // Light Magenta
 
@@ -94,17 +94,17 @@ void writeLog( int loglvl, const char* str, ... ) {
     char* msg = (char*)malloc( msgSize );
 
     // Used to hold the current printing color
-    char outColor[6];
+    char outColor[6] = { '\0' };
     // Set default color to 'Normal'
-    strncpy( outColor, COL_NORM, 6 );
+    strncpy( outColor, COL_NORM, strlen( COL_NORM ) );
 
     // Prepare message based on logging level and debug level
     if( loglvl < SIMPLOG_INFO ){
         if( loglvl == SIMPLOG_FATAL ) {
-            strncpy( outColor, COL_FATAL, 6 );
+            strncpy( outColor, COL_FATAL, strlen( COL_FATAL ) );
             sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
         } else if( loglvl == SIMPLOG_ERROR ) {
-            strncpy( outColor, COL_ERROR, 6 );
+            strncpy( outColor, COL_ERROR, strlen( COL_ERROR ) );
             sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
@@ -130,22 +130,22 @@ void writeLog( int loglvl, const char* str, ... ) {
 
         // Check loglvl/dbgLevel and add appropriate name to message
         if( loglvl == SIMPLOG_INFO ) {
-            strncpy( outColor, COL_INFO, 6 );
+            strncpy( outColor, COL_INFO, strlen( COL_INFO ) );
             sprintf( msg, "%s\tINFO  : ", date );      // 0: Info
         } else if( loglvl == SIMPLOG_WARN && dbgLevel >= SIMPLOG_WARN ) {
-            strncpy( outColor, COL_WARN, 6 );
+            strncpy( outColor, COL_WARN, strlen( COL_WARN ) );
             sprintf( msg, "%s\tWARN  : ", date );      // 1: Warning
         } else if( loglvl == SIMPLOG_DEBUG && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_DEBUG, 6 );
+            strncpy( outColor, COL_DEBUG, strlen( COL_DEBUG ) );
             sprintf( msg, "%s\tDEBUG : ", date );      // 2: Debug
         } else if( loglvl == SIMPLOG_VERBOSE && dbgLevel >= SIMPLOG_VERBOSE ) {
-            strncpy( outColor, COL_VERBOSE, 6 );
+            strncpy( outColor, COL_VERBOSE, strlen( COL_VERBOSE ) );
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
         } else if( loglvl == SIMPLOG_LOGGER && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_LOGGER, 6 );
+            strncpy( outColor, COL_LOGGER, strlen( COL_LOGGER ) );
             sprintf( msg, "%s\tLOG   : ", date );
         } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_TRACE, 6 );
+            strncpy( outColor, COL_TRACE, strlen( COL_TRACE ) );
             sprintf( msg, "%s\tTRACE : ", date );
         } else {
             // Don't print anything
