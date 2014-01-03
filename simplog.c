@@ -94,7 +94,8 @@ void writeLog( int loglvl, const char* str, ... ) {
     char* msg = (char*)malloc( msgSize );
 
     // Used to hold the current printing color
-    char outColor[6] = { '\0' };
+    char outColor[6];
+    memset( outColor, '\0', 6 );
     // Set default color to 'Normal'
     strncpy( outColor, COL_NORM, strlen( COL_NORM ) );
 
@@ -114,7 +115,8 @@ void writeLog( int loglvl, const char* str, ... ) {
         // If errno is anything other than "Success", write it to the log.
         if( errno ) {
             // Used to ensure errno output is aligned correctly
-            const char* dateLengthSpacing = "                     ";
+            char dateLengthSpacing[21];
+            memset( dateLengthSpacing, ' ', 21 );
             sprintf( msg + strlen( msg), "%s\terrno : %s\n", dateLengthSpacing, strerror( errno ) );
         }
         // Write message to log
@@ -215,8 +217,13 @@ void writeStackTrace() {
     // output message to be composed
     char* message = ( char* )malloc( max_message_size );
 
+    // used to ensure consistent alignment between terminal and log file
+    char indentedLineSpacing[31];
+    memset( indentedLineSpacing, ' ', 29 );
+    indentedLineSpacing[30] = '\t';
+
     // Add initial message to the message variable
-    sprintf( message, "StackTrace - Most recent calls appear first:\n\t\t\t\t" );
+    sprintf( message, "StackTrace - Most recent calls appear first:\n%s", indentedLineSpacing );
     int initialSize = strlen( message );
 
     // intermittent offset during message construction
@@ -243,8 +250,10 @@ void writeStackTrace() {
         // don't add newline and padding to last trace
         if( i < ( backtrace_size - 1 ) ) {
             // add newline and tabs for proper output alignment
-            strncpy( message + offset, "\n\t\t\t\t", 5 );
-            offset += 5;
+            message[offset] = '\n';
+            offset += 1;
+            strncpy( message + offset, indentedLineSpacing, strlen( indentedLineSpacing ) );
+            offset += strlen( indentedLineSpacing );
         }
     }
 
