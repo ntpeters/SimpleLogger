@@ -25,6 +25,16 @@
 // Used for printing stack trace. Prints if debug level is SIMPLOG_DEBUG or higher
 #define SIMPLOG_TRACE   5
 
+// Define colors for printing to terminal
+#define COL_NORM    "\x1B[0m"   // Normal
+#define COL_FATAL   "\x1B[31m"  // Red
+#define COL_ERROR   "\x1B[91m"  // Light Red
+#define COL_INFO    "\x1B[37m"  // White
+#define COL_WARN    "\x1B[33m"  // Yellow
+#define COL_DEBUG   "\x1B[34m"  // Blue
+#define COL_VERBOSE "\x1B[94m"  // Light Blue
+#define COL_LOGGER  "\x1B[90m"  // Dark Grey
+#define COL_TRACE   "\x1B[95m"  // Light Magenta
 
 // Logger settings constants
 static int          dbgLevel    = SIMPLOG_DEBUG;        // Default Logging level
@@ -65,7 +75,7 @@ void writeLog( int loglvl, const char* str, ... ) {
 
     // No way to determine size of list
     // This will hold a stacktrace of 15 lines plus a message
-    int max_va_list_size = 4095;
+    int max_va_list_size = 4146;
 
     // Allocate args string variable
     char* va_msg = (char*)malloc( strlen( str ) + max_va_list_size );
@@ -83,11 +93,18 @@ void writeLog( int loglvl, const char* str, ... ) {
     int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 10;  // 10 char buffer to prevent overflow
     char* msg = (char*)malloc( msgSize );
 
+    // Used to hold the current printing color
+    char outColor[6];
+    // Set default color to 'Normal'
+    strncpy( outColor, COL_NORM, 6 );
+
     // Prepare message based on logging level and debug level
     if( loglvl < SIMPLOG_INFO ){
         if( loglvl == SIMPLOG_FATAL ) {
+            strncpy( outColor, COL_FATAL, 6 );
             sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
         } else if( loglvl == SIMPLOG_ERROR ) {
+            strncpy( outColor, COL_ERROR, 6 );
             sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
@@ -104,6 +121,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         write( log, msg, strlen( msg ) );
         // Write message to standard error too
         if( !silentMode ) {
+            write( STDERR_FILENO, outColor, strlen( outColor ) );
             write( STDERR_FILENO, msg, strlen( msg ) );
         }
     } else {
@@ -112,16 +130,22 @@ void writeLog( int loglvl, const char* str, ... ) {
 
         // Check loglvl/dbgLevel and add appropriate name to message
         if( loglvl == SIMPLOG_INFO ) {
+            strncpy( outColor, COL_INFO, 6 );
             sprintf( msg, "%s\tINFO  : ", date );      // 0: Info
         } else if( loglvl == SIMPLOG_WARN && dbgLevel >= SIMPLOG_WARN ) {
+            strncpy( outColor, COL_WARN, 6 );
             sprintf( msg, "%s\tWARN  : ", date );      // 1: Warning
         } else if( loglvl == SIMPLOG_DEBUG && dbgLevel >= SIMPLOG_DEBUG ) {
+            strncpy( outColor, COL_DEBUG, 6 );
             sprintf( msg, "%s\tDEBUG : ", date );      // 2: Debug
         } else if( loglvl == SIMPLOG_VERBOSE && dbgLevel >= SIMPLOG_VERBOSE ) {
+            strncpy( outColor, COL_VERBOSE, 6 );
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
         } else if( loglvl == SIMPLOG_LOGGER && dbgLevel >= SIMPLOG_DEBUG ) {
+            strncpy( outColor, COL_LOGGER, 6 );
             sprintf( msg, "%s\tLOG   : ", date );
         } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
+            strncpy( outColor, COL_TRACE, 6 );
             sprintf( msg, "%s\tTRACE : ", date );
         } else {
             // Don't print anything
@@ -137,10 +161,15 @@ void writeLog( int loglvl, const char* str, ... ) {
             write( log, msg, strlen( msg ) );
             // Write message to standard out too
             if( !silentMode ) {
+                write( STDOUT_FILENO, outColor, strlen( outColor ) );
                 write( STDOUT_FILENO, msg, strlen( msg ) );
             }
         }
     }
+
+    // Reset terminal colors to normal
+    write( STDOUT_FILENO, COL_NORM, strlen( COL_NORM ) );
+    write( STDERR_FILENO, COL_NORM, strlen( COL_NORM ) );
 
     // free args list
     va_end( args );
@@ -186,18 +215,22 @@ void writeStackTrace() {
     // output message to be composed
     char* message = ( char* )malloc( max_message_size );
 
+    // Add initial message to the message variable
+    sprintf( message, "StackTrace - Most recent calls appear first:\n\t\t\t\t" );
+    int initialSize = strlen( message );
+
     // intermittent offset during message construction
-    int offset = 0;
+    int offset = initialSize;
     // contstructing the message. starting at index 1 to omit this call
     for( int i = 1; i < backtrace_size; i++ ) {
         // length of the current string
         int string_length = strlen( backtrace_strings[i] );
 
         // ensure the message buffer is not overflowed
-        if( offset + string_length > max_message_size ) {
+        if( ( offset + string_length - initialSize ) > max_message_size ) {
             // add notice of truncation to the message if there is room
-            if( offset + 21 < max_message_size ) {
-                strncpy( message + offset, "[backtrace truncated]", 21 );
+            if( offset + 22 < max_message_size ) {
+                strncpy( message + offset, " [backtrace truncated]", 22 );
             }
             // break out of construction prematurely to prevent overflow
             break;
@@ -301,7 +334,7 @@ void flushLog() {
         // Print error message if silent mode is not enabled
         if( !silentMode ) {
             printf( "%s\tLOG   : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
-            fflush(stdout); 
+            fflush( stdout ); 
         }
     }
 
@@ -366,5 +399,5 @@ static char* getDateString() {
     return date;
 }
 
-// Puting all public functions into their own "namespace"
+// Put all public functions into their own "namespace"
 simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog };
