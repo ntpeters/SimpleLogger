@@ -4,7 +4,7 @@
 
      Author: Nate Peterson
      Created: June 2013
-     Last Updated: Dec 2013
+     Last Updated: Jan 2014
 */
 
 #include <stdio.h>
