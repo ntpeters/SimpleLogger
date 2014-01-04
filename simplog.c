@@ -18,6 +18,8 @@
 #include <stdbool.h>
 #include <execinfo.h>
 
+#include "backtrace-symbols.h"
+
 #include "simplog.h"
 
 // Used for printing from within the logger. Prints if debug level is SIMPLOG_DEBUG or higher
@@ -90,7 +92,7 @@ void writeLog( int loglvl, const char* str, ... ) {
     char* date = getDateString();
 
     // Allocate message variable
-    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 10;  // 10 char buffer to prevent overflow
+    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 50;  // 10 char buffer to prevent overflow
     char* msg = (char*)malloc( msgSize );
 
     // Used to hold the current printing color
@@ -115,8 +117,8 @@ void writeLog( int loglvl, const char* str, ... ) {
         // If errno is anything other than "Success", write it to the log.
         if( errno ) {
             // Used to ensure errno output is aligned correctly
-            char dateLengthSpacing[21];
-            memset( dateLengthSpacing, ' ', 21 );
+            char dateLengthSpacing[ strlen( date ) + 1 ];
+            memset( dateLengthSpacing, ' ', strlen( date ) +1 );
             sprintf( msg + strlen( msg), "%s\terrno : %s\n", dateLengthSpacing, strerror( errno ) );
         }
         // Write message to log
@@ -210,6 +212,9 @@ void writeStackTrace() {
 
     // string descriptions of each backtrace address
     char** backtrace_strings = backtrace_symbols( backtrace_addresses, backtrace_size );
+    // Clear errno
+    // It is possible errno is set to a value we don't care about by 'backtrace_symbols'
+    errno = 0;
 
     // max size for the message, assuming individual strings with max of 255 bytes
     int max_message_size = sizeof( backtrace_strings ) * 255;
@@ -218,9 +223,10 @@ void writeStackTrace() {
     char* message = ( char* )malloc( max_message_size );
 
     // used to ensure consistent alignment between terminal and log file
-    char indentedLineSpacing[31];
-    memset( indentedLineSpacing, ' ', 29 );
+    char indentedLineSpacing[32];
+    memset( indentedLineSpacing, ' ', 31 );
     indentedLineSpacing[30] = '\t';
+    //indentedLineSpacing[31] = '\0';
 
     // Add initial message to the message variable
     sprintf( message, "StackTrace - Most recent calls appear first:\n%s", indentedLineSpacing );
