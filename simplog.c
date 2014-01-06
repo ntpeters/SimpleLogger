@@ -7,6 +7,15 @@
      Last Updated: Jan 2014
 */
 
+#include "SimpLogConfig.h"
+
+#ifdef BETTER_BACKTRACE
+    #include <execinfo.h>
+    #include "backtrace-symbols.h"
+#else
+    #include <execinfo.h>
+#endif
+
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -16,13 +25,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <execinfo.h>
 
-#include "SimpLogConfig.h"
 
-#ifdef BETTER_BACKTRACE
-    #include "backtrace-symbols.h"
-#endif
+
 
 #include "simplog.h"
 
@@ -75,6 +80,11 @@ static char* getDateString();
     ...             - Variable length list of arguments to be used with the format string (optional).
 */
 void writeLog( int loglvl, const char* str, ... ) {
+    #ifdef _GNU_SOURCE
+        printf( "modified backtrace found\n");
+    #else
+        printf( "not found\n");
+    #endif
     // Prepare variable length args list
     va_list args;
     va_start( args, str );
