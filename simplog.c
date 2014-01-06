@@ -18,7 +18,11 @@
 #include <stdbool.h>
 #include <execinfo.h>
 
-#include "backtrace-symbols.h"
+#include "SimpLogConfig.h"
+
+#ifdef BETTER_BACKTRACE
+    #include "backtrace-symbols.h"
+#endif
 
 #include "simplog.h"
 
