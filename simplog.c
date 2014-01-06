@@ -80,11 +80,6 @@ static char* getDateString();
     ...             - Variable length list of arguments to be used with the format string (optional).
 */
 void writeLog( int loglvl, const char* str, ... ) {
-    #ifdef _GNU_SOURCE
-        printf( "modified backtrace found\n");
-    #else
-        printf( "not found\n");
-    #endif
     // Prepare variable length args list
     va_list args;
     va_start( args, str );
