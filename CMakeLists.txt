@@ -28,16 +28,10 @@ set( PACKAGE "SimpLog" )
 set( PACKAGE_VERSION "0.0.1" )
 if( BFD_LIBRARY AND IBERTY_LIBRARY )
 	option( BETTER_BACKTRACE "" ON )
+	add_library( backtrace-symbols OBJECT backtrace-symbols.c )
+	add_library( simplog STATIC simplog.c $<TARGET_OBJECTS:backtrace-symbols> )
+	target_link_libraries( simplog ${BFD_LIBRARY} ${IBERTY_LIBRARY} ${CMAKE_DL_LIBS} )
 else()
 	option( BETTER_BACKTRACE "" OFF )
+	add_library( simplog STATIC simplog.c )
 endif()
-
-add_library( backtrace-symbols OBJECT backtrace-symbols.c )
-
-add_library( simplog STATIC simplog.c )
-
-if( BFD_FOUND AND IBERTY_FOUND )
-	set( LIBS backtrace-symbols ${BFD_LIBRARY} ${IBERTY_LIBRARY} ${CMAKE_DL_LIBS} )
-endif()
-
-target_link_libraries( simplog ${LIBS} )
