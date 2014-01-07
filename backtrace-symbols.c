@@ -41,6 +41,8 @@
    along with this program; if not, write to the Free Software
    Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
+#include <SimpLogConfig.h>
+
 #define fatal(a, b) exit(1)
 #define bfd_fatal(a) exit(1)
 #define bfd_nonfatal(a) exit(1)

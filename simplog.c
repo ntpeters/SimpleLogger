@@ -7,7 +7,7 @@
      Last Updated: Jan 2014
 */
 
-#include "SimpLogConfig.h"
+#include <SimpLogConfig.h>
 
 #ifdef BETTER_BACKTRACE
     #include <execinfo.h>
