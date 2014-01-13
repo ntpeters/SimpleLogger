@@ -20,3 +20,12 @@
 # Vim swap and undo files
 *.un~
 *.swp
+
+# CMake Files
+CMakeCache.txt
+CMakeFiles/
+SimpLogConfig.h
+Makefile
+cmake_install.cmake
+install_manifest.txt
+build/

@@ -7,6 +7,8 @@
      Last Updated: Jan 2014
 */
 
+// #include <SimpLogConfig.h>
+
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -18,7 +20,11 @@
 #include <stdbool.h>
 #include <execinfo.h>
 
-#include "backtrace-symbols.h"
+// #ifdef BETTER_BACKTRACE
+//     #include "backtrace-symbols.h"    
+// #endif
+
+//#include "backtrace-symbols.h"
 
 #include "simplog.h"
 
@@ -45,6 +51,7 @@ static bool         silentMode  = false;             // Default silent mode sett
 
 // Private function prototypes
 static char* getDateString();
+static char** getPrettyBacktrace( void* addresses[], int array_size );
 
 /*
     Writes output to defined logfile and standard out/err with
@@ -92,7 +99,7 @@ void writeLog( int loglvl, const char* str, ... ) {
     char* date = getDateString();
 
     // Allocate message variable
-    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 50;  // 10 char buffer to prevent overflow
+    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 50;  // 50 char buffer to prevent overflow
     char* msg = (char*)malloc( msgSize );
 
     // Used to hold the current printing color
@@ -118,7 +125,7 @@ void writeLog( int loglvl, const char* str, ... ) {
         if( errno ) {
             // Used to ensure errno output is aligned correctly
             char dateLengthSpacing[ strlen( date ) + 1 ];
-            memset( dateLengthSpacing, ' ', strlen( date ) +1 );
+            memset( dateLengthSpacing, ' ', strlen( date ) + 1 );
             sprintf( msg + strlen( msg), "%s\terrno : %s\n", dateLengthSpacing, strerror( errno ) );
         }
         // Write message to log
@@ -210,8 +217,15 @@ void writeStackTrace() {
     // size of backtrace
     size_t backtrace_size = backtrace( backtrace_addresses, max_backtrace_size );
 
+    // used to know if pretty backtrace was returned
+    bool freePrettyBacktrace = true;
+
     // string descriptions of each backtrace address
-    char** backtrace_strings = backtrace_symbols( backtrace_addresses, backtrace_size );
+    char** backtrace_strings = getPrettyBacktrace( backtrace_addresses, backtrace_size );
+    if( backtrace_strings == NULL ) {
+        backtrace_strings = backtrace_symbols( backtrace_addresses, backtrace_size );
+        freePrettyBacktrace = false;
+    }
     // Clear errno
     // It is possible errno is set to a value we don't care about by 'backtrace_symbols'
     errno = 0;
@@ -223,10 +237,10 @@ void writeStackTrace() {
     char* message = ( char* )malloc( max_message_size );
 
     // used to ensure consistent alignment between terminal and log file
-    char indentedLineSpacing[32];
-    memset( indentedLineSpacing, ' ', 31 );
+    char* indentedLineSpacing = (char*)malloc( 32 );
+    memset( indentedLineSpacing, ' ', 32 );
     indentedLineSpacing[30] = '\t';
-    //indentedLineSpacing[31] = '\0';
+    indentedLineSpacing[31] = 0;
 
     // Add initial message to the message variable
     sprintf( message, "StackTrace - Most recent calls appear first:\n%s", indentedLineSpacing );
@@ -266,7 +280,7 @@ void writeStackTrace() {
     // if the buffer has been filled, ensure it is null terminated
     if( offset >= max_message_size - 1 ) {
             // add null byte to the end of the message
-            message[offset] = '\0';
+            message[offset] = 0;
     }
 
     // write the final message to the logs
@@ -274,6 +288,14 @@ void writeStackTrace() {
 
     // free message and backtrace variables
     free( message );
+    free( indentedLineSpacing );
+
+    // free backtrace strings
+    if( freePrettyBacktrace ) {
+        for( int i = 0; i < backtrace_size; i++ ) {
+            free( backtrace_strings[i] );
+        }
+    }
     free( backtrace_strings );
 }
 
@@ -412,6 +434,102 @@ static char* getDateString() {
     }
 
     return date;
+}
+
+/*
+    Gets a more human readable version of backtrace with function/file names
+    and line numbers
+
+    Input:
+    void* addresses[]   - array of addresses returned by a call to backtrace()
+    int array_size      - size of the addresses array returned by backtrace();
+
+    Returned list must be freed.
+*/
+static char** getPrettyBacktrace( void* addresses[], int array_size ) {
+    // Used to return the strings generated from the addresses
+    char** backtrace_strings = (char**)malloc( sizeof( char* ) * array_size );
+    for( int i = 0; i < array_size; i ++ ) {
+        backtrace_strings[i] = (char*)malloc( sizeof( char ) * 255 );
+    }
+
+    // Will hold the command to be used
+    char command_string[255];
+    char exe_path[255];
+
+    // Used to check if an error occured while setting up command
+    bool error = false;
+
+    // Check if we are running on Mac OS or not, and select appropriate command
+    char* command;
+    #ifdef __APPLE__
+        // Check if 'gaddr2line' function is available, if not exit
+        if( !system( "which gaddr2line > /dev/null 2>&1" ) ) {
+            command = "gaddr2line -Cfspe";
+            // TODO: get path for mac with 'proc_pidpath'
+        } else {
+            writeLog( SIMPLOG_LOGGER, "Function 'gaddr2line' unavailable. Defaulting to standard backtrace. Please install package 'binutils' for better stacktrace output." );
+            error = true;
+        }
+    #else
+        // Check if 'addr2line' function is available, if not exit
+        if( !system( "which addr2line > /dev/null 2>&1" ) ) {
+            command = "addr2line -Cfspe";
+            int path_length = readlink( "/proc/self/exe", exe_path, sizeof( exe_path ) );
+            if(  path_length < 0 ) {
+                writeLog( SIMPLOG_LOGGER, "Unable to get execution path. Defaulting to standard backtrace." );
+                error = true;
+            }
+            exe_path[path_length] = 0;
+        } else {
+            writeLog( SIMPLOG_LOGGER, "Function 'addr2line' unavailable. Defaulting to standard backtrace. Please install package 'binutils' for better stacktrace output." );
+            error = true;
+        }
+    #endif
+
+    // If an error occured, exit now
+    if( error ) {
+        for( int i = 0; i < array_size; i ++ ) {
+            free( backtrace_strings[i] );
+        }
+        free( backtrace_strings );
+        return NULL;
+    }
+
+    for( int i = 0; i < array_size; i++ ) {
+        // Compose the complete command to execute
+        sprintf( command_string, "%s %s %X", command, exe_path, (uint)addresses[i] );
+        
+        // Execute the command
+        FILE* line = popen( command_string, "r" );
+        if( line == NULL ) {
+            writeLog( SIMPLOG_LOGGER, "Failed to execute command: '%s'. Defaulting to standard backtrace.", command );
+            for( int i = 0; i < array_size; i ++ ) {
+                free( backtrace_strings[i] );
+            }
+            free( backtrace_strings );
+            return NULL;
+        }
+
+        // Read the output into the return string
+        if( fgets( backtrace_strings[i] , 255, line ) == NULL ) {
+            writeLog( SIMPLOG_LOGGER, "Failed to get pretty backtrace strings. Defaulting to standard backtrace." );
+            for( int i = 0; i < array_size; i ++ ) {
+                free( backtrace_strings[i] );
+            }
+            free( backtrace_strings );
+            return NULL;
+        }
+
+        // Remove newline and set to null bit
+        backtrace_strings[i][ strlen( backtrace_strings[i] ) - 1 ] = 0;
+
+        // Close the command pipe
+        pclose( line );
+    }
+
+    // Return the final list of backtrace strings
+    return backtrace_strings;
 }
 
 // Put all public functions into their own "namespace"
