@@ -277,10 +277,13 @@ void writeStackTrace() {
         }
     }
 
-    // if the buffer has been filled, ensure it is null terminated
+    // ensure it is null terminated
     if( offset >= max_message_size - 1 ) {
-            // add null byte to the end of the message
-            message[offset] = 0;
+            // if the message has been filled or overfilled, truncate
+            message[max_message_size - 1] = 0;
+    } else {
+        // add null byte to the end of the message
+        message[offset] = 0;
     }
 
     // write the final message to the logs
@@ -317,16 +320,27 @@ void setLogDebugLevel( int level ) {
          dbgLevel = level;
          writeLog( SIMPLOG_LOGGER, "Debug level set to %d", level );
     } else {
-        char* error = (char*)malloc(500);
-        sprintf( &error[ strlen( error ) ], "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, SIMPLOG_DEBUG );
-        sprintf( &error[ strlen( error ) ], "\t\t\t\tValid Debug Levels:\n");
-        sprintf( &error[ strlen( error ) ], "\t\t\t\t0  : Info\n" );
-        sprintf( &error[ strlen( error ) ], "\t\t\t\t1  : Warnings\n" );
-        sprintf( &error[ strlen( error ) ], "\t\t\t\t2  : Debug\n" );
-        sprintf( &error[ strlen( error ) ], "\t\t\t\t3  : Debug-Verbose" );
+        // set to default debug level
+        dbgLevel = SIMPLOG_DEBUG;
+
+        // used to ensure consistent alignment between terminal and log file
+        char* indentedLineSpacing = (char*)malloc( 32 );
+        memset( indentedLineSpacing, ' ', 32 );
+        indentedLineSpacing[30] = '\t';
+        indentedLineSpacing[31] = 0;
+
+        // prepare error message
+        char* error = (char*)malloc( 500 );
+        sprintf( error, "Invalid debug level of '%d'. Setting to default value of '%d'\n", level, SIMPLOG_DEBUG );
+        sprintf( error + strlen( error ), "%sValid Debug Levels:\n", indentedLineSpacing );
+        sprintf( error + strlen( error ), "%s0  : Info\n", indentedLineSpacing );
+        sprintf( error + strlen( error ), "%s1  : Warnings\n", indentedLineSpacing );
+        sprintf( error + strlen( error ), "%s2  : Debug\n", indentedLineSpacing );
+        sprintf( error + strlen( error ), "%s3  : Debug-Verbose", indentedLineSpacing );
 
         writeLog( SIMPLOG_LOGGER, error );
         free( error );
+        free( indentedLineSpacing );
     }
 }
 
