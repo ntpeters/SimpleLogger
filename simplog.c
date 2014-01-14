@@ -464,10 +464,13 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         backtrace_strings[i] = (char*)malloc( sizeof( char ) * 255 );
     }
 
+    int max_path_size = 4096;
+    int max_command_string_size = max_path_size + 255;
+
     // Will hold the command to be used (max size of path + 255)
-    char command_string[4351]
+    char command_string[max_command_string_size]
 ;   // set to the maximum possible path size
-    char exe_path[4096];
+    char exe_path[max_path_size];
 
     // Used to check if an error occured while setting up command
     bool error = false;
@@ -549,7 +552,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         backtrace_strings[i][ strlen( backtrace_strings[i] ) - 1 ] = 0;
 
         // If any addresses are able to be evaluated, we consider it a success
-        if( strcmp( backtrace_strings[i], "??" ) != 0 && strcmp( backtrace_strings[i], "?? ??:00") != 0 ) {
+        if( strcmp( backtrace_strings[i], "??" ) != 0 && strcmp( backtrace_strings[i], "?? ??:0" ) != 0 ) {
             address_evaluation_successful = true;
         }
 
