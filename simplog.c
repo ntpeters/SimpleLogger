@@ -7,8 +7,6 @@
      Last Updated: Jan 2014
 */
 
-// #include <SimpLogConfig.h>
-
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
@@ -551,7 +549,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         backtrace_strings[i][ strlen( backtrace_strings[i] ) - 1 ] = 0;
 
         // If any addresses are able to be evaluated, we consider it a success
-        if( strcmp( backtrace_strings[i], "??" ) != 0 ) {
+        if( strcmp( backtrace_strings[i], "??" ) != 0 && strcmp( backtrace_strings[i], "?? ??:00") != 0 ) {
             address_evaluation_successful = true;
         }
 
