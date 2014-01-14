@@ -20,11 +20,9 @@
 #include <stdbool.h>
 #include <execinfo.h>
 
-// #ifdef BETTER_BACKTRACE
-//     #include "backtrace-symbols.h"    
-// #endif
-
-//#include "backtrace-symbols.h"
+#ifdef __APPLE__
+     #include <libproc.h>
+#endif
 
 #include "simplog.h"
 
@@ -45,9 +43,9 @@
 #define COL_TRACE   "\x1B[95m"  // Light Magenta
 
 // Logger settings constants
-static int          dbgLevel    = SIMPLOG_DEBUG;        // Default Logging level
+static int          dbgLevel    = SIMPLOG_DEBUG;    // Default Logging level
 static const char*  logFile     = "default.log";    // Default log file name
-static bool         silentMode  = false;             // Default silent mode setting
+static bool         silentMode  = false;            // Default silent mode setting
 
 // Private function prototypes
 static char* getDateString();
@@ -458,7 +456,8 @@ static char* getDateString() {
     void* addresses[]   - array of addresses returned by a call to backtrace()
     int array_size      - size of the addresses array returned by backtrace();
 
-    Returned list must be freed.
+    Returns a a list of strings describing the backtrace addresses. This list
+    must be freed by the caller.  On error, NULL is returned.
 */
 static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     // Used to return the strings generated from the addresses
@@ -467,9 +466,10 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         backtrace_strings[i] = (char*)malloc( sizeof( char ) * 255 );
     }
 
-    // Will hold the command to be used
-    char command_string[255];
-    char exe_path[255];
+    // Will hold the command to be used (max size of path + 255)
+    char command_string[4351]
+;   // set to the maximum possible path size
+    char exe_path[4096];
 
     // Used to check if an error occured while setting up command
     bool error = false;
@@ -480,7 +480,13 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         // Check if 'gaddr2line' function is available, if not exit
         if( !system( "which gaddr2line > /dev/null 2>&1" ) ) {
             command = "gaddr2line -Cfspe";
-            // TODO: get path for mac with 'proc_pidpath'
+            pid_t pid = getpid();
+            int path_length = proc_pidpath( pid, exe_path, sizeof( exe_path ) );
+            if( path_length <= 0 ) {
+                writeLog( SIMPLOG_LOGGER, "Unable to get execution path. Defaulting to standard backtrace." );
+                error = true;
+            }
+            exe_path[path_length] = 0;
         } else {
             writeLog( SIMPLOG_LOGGER, "Function 'gaddr2line' unavailable. Defaulting to standard backtrace. Please install package 'binutils' for better stacktrace output." );
             error = true;
@@ -490,7 +496,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         if( !system( "which addr2line > /dev/null 2>&1" ) ) {
             command = "addr2line -Cfspe";
             int path_length = readlink( "/proc/self/exe", exe_path, sizeof( exe_path ) );
-            if(  path_length < 0 ) {
+            if(  path_length <= 0 ) {
                 writeLog( SIMPLOG_LOGGER, "Unable to get execution path. Defaulting to standard backtrace." );
                 error = true;
             }
@@ -512,12 +518,21 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
 
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
-        sprintf( command_string, "%s %s %X", command, exe_path, (uint)addresses[i] );
+        sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
         
         // Execute the command
         FILE* line = popen( command_string, "r" );
+        
+        // Error checking for command
         if( line == NULL ) {
             writeLog( SIMPLOG_LOGGER, "Failed to execute command: '%s'. Defaulting to standard backtrace.", command );
+            for( int i = 0; i < array_size; i ++ ) {
+                free( backtrace_strings[i] );
+            }
+            free( backtrace_strings );
+            return NULL;
+        } else if( strlen( line ) == 0 ) {
+            writeLog( SIMPLOG_LOGGER, "Command '%s' failed to evaluate addresses. Defaulting to standard backtrace.", command );
             for( int i = 0; i < array_size; i ++ ) {
                 free( backtrace_strings[i] );
             }
