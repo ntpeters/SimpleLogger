@@ -516,23 +516,20 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         return NULL;
     }
 
+    // Used to check if the addresses were successfully evaluated
+    bool address_evaluation_successful = false;
+
+    // Evaluate all addresses
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
         sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
         
         // Execute the command
         FILE* line = popen( command_string, "r" );
-        
+
         // Error checking for command
         if( line == NULL ) {
             writeLog( SIMPLOG_LOGGER, "Failed to execute command: '%s'. Defaulting to standard backtrace.", command );
-            for( int i = 0; i < array_size; i ++ ) {
-                free( backtrace_strings[i] );
-            }
-            free( backtrace_strings );
-            return NULL;
-        } else if( strlen( line ) == 0 ) {
-            writeLog( SIMPLOG_LOGGER, "Command '%s' failed to evaluate addresses. Defaulting to standard backtrace.", command );
             for( int i = 0; i < array_size; i ++ ) {
                 free( backtrace_strings[i] );
             }
@@ -553,8 +550,23 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
         // Remove newline and set to null bit
         backtrace_strings[i][ strlen( backtrace_strings[i] ) - 1 ] = 0;
 
+        // If any addresses are able to be evaluated, we consider it a success
+        if( strcmp( backtrace_strings[i], "??" ) != 0 ) {
+            address_evaluation_successful = true;
+        }
+
         // Close the command pipe
         pclose( line );
+    }
+
+    // If no addresses were evaluated successfully, we fall back on the standard backtrace
+    if( !address_evaluation_successful ) {
+        writeLog( SIMPLOG_LOGGER, "Command '%s' failed to evaluate addresses. Defaulting to standard backtrace.", command );
+        for( int i = 0; i < array_size; i ++ ) {
+            free( backtrace_strings[i] );
+        }
+        free( backtrace_strings );
+        return NULL;
     }
 
     // Return the final list of backtrace strings
