@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <execinfo.h>
 
 #ifdef __APPLE__
@@ -473,7 +474,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     bool error = false;
 
     // Check if we are running on Mac OS or not, and select appropriate command
-    char* command;
+    const char* command;
     #ifdef __APPLE__
         // Check if 'gaddr2line' function is available, if not exit
         if( !system( "which gaddr2line > /dev/null 2>&1" ) ) {
@@ -520,7 +521,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     // Evaluate all addresses
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
-        sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
+        sprintf( command_string, "%s \"%s\" %X 2>/dev/null", command, exe_path, (unsigned int)(uintptr_t)addresses[i] );
         
         // Execute the command
         FILE* line = popen( command_string, "r" );
