@@ -520,7 +520,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     // Evaluate all addresses
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
-        sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
+        sprintf( command_string, "%s \"%s\" %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
         
         // Execute the command
         FILE* line = popen( command_string, "r" );
