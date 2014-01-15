@@ -478,7 +478,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     #ifdef __APPLE__
         // Check if 'gaddr2line' function is available, if not exit
         if( !system( "which gaddr2line > /dev/null 2>&1" ) ) {
-            command = "gaddr2line -Cfspe";
+            command = "gaddr2line -Cfspei";
             pid_t pid = getpid();
             int path_length = proc_pidpath( pid, exe_path, sizeof( exe_path ) );
             if( path_length <= 0 ) {
