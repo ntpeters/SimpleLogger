@@ -25,7 +25,6 @@
 CMakeCache.txt
 CMakeFiles/
 SimpLogConfig.h
-Makefile
 cmake_install.cmake
 install_manifest.txt
 build/
