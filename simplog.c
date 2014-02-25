@@ -52,10 +52,10 @@ static char** getPrettyBacktrace( void* addresses[], int array_size );
 /*
     Writes output to defined logfile and standard out/err with
     date/time stamp and associated log level.
-    
+
     Can take formatted string like printf, with a variable sized list of
     arguments.
-     
+
     Prints errno when appropriate.
 
     Always adds new line to output.
@@ -380,8 +380,10 @@ void flushLog() {
     } else {
         // Print error message if silent mode is not enabled
         if( !silentMode ) {
+            write( STDOUT_FILENO, COL_LOGGER, strlen( COL_LOGGER ) );
             printf( "%s\tLOG   : Logfile '%s' does not exist. It will be created now.\n", getDateString(), logFile );
-            fflush( stdout ); 
+            write( STDOUT_FILENO, COL_NORM, strlen( COL_NORM ) );
+            fflush( stdout );
         }
     }
 
@@ -390,6 +392,99 @@ void flushLog() {
     close( log );
 
     writeLog( SIMPLOG_LOGGER, "Log file '%s' cleared", logFile );
+}
+
+/*
+    Loads logger configuration settings from the given config file.
+
+    Input:
+    const char* config - Logger config file to parse and load settings from
+*/
+void loadConfig( const char* config ) {
+    // Settings variables (set to default values)
+    bool silentSetting = silentMode;
+    bool flushSetting = false;
+    int debugLevelSetting = dbgLevel;
+    char logfileSetting[255];
+    strcpy( logfileSetting, logFile );
+
+    // TODO Read settings
+    /*FILE* file = fopen( config, "r" );*/
+    int fd = open( config, O_RDONLY );
+    if( fd == -1 ) {
+        writeLog( SIMPLOG_LOGGER, "Unable to open config file: '%s'", config );
+        return;
+    }
+
+    int SETTINGS_BUFSIZE = 1024;
+    char* settingsBuffer = (char*)malloc( SETTINGS_BUFSIZE );
+    ssize_t bytesRead = 0;
+    while( ( bytesRead = read( fd + bytesRead, settingsBuffer, SETTINGS_BUFSIZE ) ) > 0 ) {
+        if( bytesRead == SETTINGS_BUFSIZE ) {
+            settingsBuffer = (char*)realloc( (void*)settingsBuffer, SETTINGS_BUFSIZE * 2 );
+        }
+    }
+
+    // Line start, split, and end incices for each line read
+    int startL  = 0;
+    int splitL  = 0;
+    int endL    = 0;
+    // Buffers to hold variable and value for each line
+    char var[255];
+    char val[255];
+    // Parse the config file
+    for( int i = 0; i < strlen( settingsBuffer ); i++ ) {
+        if( settingsBuffer[i] == '=' ) {
+            // Save the index to split the current line on
+            splitL = i + 1;
+        } else if( settingsBuffer[i] == '\n' ) {
+            // Save the end index for the curren line
+            endL = i;
+
+            // Zero buffers
+            memset( var, 0, 255 );
+            memset( val, 0, 255 );
+
+            // Copy variable name and value into buffers
+            strncpy( var, settingsBuffer + startL, splitL - startL - 1 );
+            strncpy( val, settingsBuffer + splitL, endL - splitL );
+
+            // Parse the value if it is a boolean
+            bool boolVal;
+            if( strcmp( val, "true" ) == 0 ) {
+                boolVal = true;
+            } else if( strcmp( val, "false" ) == 0 ) {
+                boolVal = false;
+            }
+
+            // Parse the settings variables
+            if( strcmp( var, "silent" ) == 0 ) {
+                silentSetting = boolVal;
+            } else if( strcmp( var, "flush" ) == 0 ) {
+                flushSetting = boolVal;
+            } else if( strcmp( var, "debug" ) == 0 ) {
+                debugLevelSetting = atoi( val );
+            } else if( strcmp( var, "logfile" ) == 0 ) {
+                strcpy( logfileSetting, val );
+            }
+
+            // Set the start index for the next line
+            startL = i + 1;
+        }
+    }
+
+    // Apply all settings
+    if( silentSetting ) {
+        logFile = logfileSetting;
+    } else {
+        setLogFile( logfileSetting );
+    }
+    if( flushSetting ) {
+        flushLog();
+    }
+    setLogSilentMode( silentSetting );
+    setLogDebugLevel( debugLevelSetting );
+
 }
 
 /*
@@ -524,7 +619,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
         sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
-        
+
         // Execute the command
         FILE* line = popen( command_string, "r" );
 
@@ -575,4 +670,4 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
 }
 
 // Put all public functions into their own "namespace"
-simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog };
+simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog, loadConfig };
