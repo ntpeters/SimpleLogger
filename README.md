@@ -16,6 +16,32 @@ user an easiear to read trace
 * Has an option to wrap messages over 80 characters to multiple lines
 * Written in C, for use in C and C++ projects
 
+##Building with SimpleLogger
+
+First be sure to compile `libsimplog.a`:
+```
+make
+```
+This will run CMake in a `build` subdirectory, and execute the generated makefile(S) there.
+The resultant `libsimplog.a` will then be copied to the root SimpleLogger directory.
+
+When building your project, you need to add the SimpleLogger directory in your build path:
+```
+-I <path-to-SimpleLogger-dir>
+```
+
+You also need to link against `libsimplog.a`:
+```
+-L <path-to-SimpleLogger-dir> -lsimplog
+```
+
+Finally, just include `simplog.h` in your project files:
+```
+#include <simplog.h>
+```
+
+You're all set!  Check out the Usage section below for how to use SimpleLogger in your program.
+
 ##Usage
 
 Each message must be accompanied by a level. Supported levels are:
@@ -47,6 +73,8 @@ To write a stacktrace, just call:
 ```
 simplog.writeStackTrace();
 ```
+Stacktraces will automatically "prettyfied" to provide easier to read traces.
+*NOTE: Pretty stacktraces are currently broken on MacOS, and will fallback to standard backtrace output.*
 
 If you want to load a config file to setup the logger:
 ```
