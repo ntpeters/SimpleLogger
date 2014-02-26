@@ -74,6 +74,7 @@ To write a stacktrace, just call:
 simplog.writeStackTrace();
 ```
 Stacktraces will automatically "prettyfied" to provide easier to read traces.
+
 *NOTE: Pretty stacktraces are currently broken on MacOS, and will fallback to standard backtrace output.*
 
 If you want to load a config file to setup the logger:
