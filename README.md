@@ -1,9 +1,9 @@
 #SimpleLogger
 
-![Example Screenshot](http://i.imgur.com/1aMpk6I.png)
-
 A basic, easy to use logger for output of messages at various logging levels
 with date/time stamp to standard out and a defined log file.
+
+![Example Screenshot](http://i.imgur.com/1aMpk6I.png)
 
 ##Features
 
@@ -107,9 +107,18 @@ void writeStackTrace();
 /*
     Loads logger configuration settings from the given config file.
 
+    Supported settings are:
+
+    silent  - Enables/disables silent mode (see setLogSilentMode)
+    wrap    - Enables/disables line wrapping (see setLineWrap)
+    flush   - Determines if the log file should be cleared (see flushLog)
+    debug   - Sets the debug level (see setLogDebugLevel)
+    logfile - Sets the path to the log file (see setLogFile)
+
     Input:
     const char* config - Logger config file to parse and load settings from
 */
+
 void loadConfig( const char* config );
 ```
 ###setLogDebugLevel
