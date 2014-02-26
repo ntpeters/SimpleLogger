@@ -22,7 +22,7 @@ First be sure to compile `libsimplog.a`:
 ```
 make
 ```
-This will run CMake in a `build` subdirectory, and execute the generated makefile(S) there.
+This will run CMake in a `build` subdirectory, and execute the generated makefile(s) there.
 The resultant `libsimplog.a` will then be copied to the root SimpleLogger directory.
 
 When building your project, you need to add the SimpleLogger directory in your build path:
