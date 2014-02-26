@@ -4,7 +4,7 @@
 
 Author: Nate Peterson
 Created: June 2013
-Last Updated: Jan 2014
+Last Updated: Feb 2014
 */
 
 #ifndef SIMPLOG_H
@@ -31,6 +31,7 @@ typedef struct {
     void ( *const setLogDebugLevel )( int level );
     void ( *const setLogFile )( const char* file );
     void ( *const setLogSilentMode )( bool silent );
+    void ( *const setLineWrap )( bool wrap );
     void ( *const flushLog )( void );
     void ( *const loadConfig )( const char* config );
 } simplog_namespace;

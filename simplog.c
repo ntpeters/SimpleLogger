@@ -4,7 +4,7 @@
 
      Author: Nate Peterson
      Created: June 2013
-     Last Updated: Jan 2014
+     Last Updated: Feb 2014
 */
 
 #include <stdio.h>
@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <execinfo.h>
+#include <stdint.h>
 
 #ifdef __APPLE__
      #include <libproc.h>
@@ -41,13 +42,15 @@
 #define COL_TRACE   "\x1B[95m"  // Light Magenta
 
 // Logger settings constants
-static int          dbgLevel    = SIMPLOG_DEBUG;    // Default Logging level
-static const char*  logFile     = "default.log";    // Default log file name
-static bool         silentMode  = false;            // Default silent mode setting
+static int  dbgLevel        = SIMPLOG_DEBUG;    // Default Logging level
+static char logFile[255]    = "default.log";    // Default log file name
+static bool silentMode      = false;            // Default silent mode setting
+static bool lineWrap        = true;             // Default setting for line wrapping
 
 // Private function prototypes
 static char* getDateString();
 static char** getPrettyBacktrace( void* addresses[], int array_size );
+static void wrapLines( char* msg, int msgSize );
 
 /*
     Writes output to defined logfile and standard out/err with
@@ -94,8 +97,14 @@ void writeLog( int loglvl, const char* str, ... ) {
     // Get current date/time
     char* date = getDateString();
 
+    // Calculate total size of the string
+    int stringSize = strlen( date ) + strlen( va_msg ) + 10;
+    // Calculate space used by line wraps
+    int lineWrapSize = ( 32 * ( stringSize / 80 ) );
+    // Calculate the total message size
+    int msgSize = stringSize + lineWrapSize + strlen( strerror( errno ) ) + 50;  // 50 char buffer to prevent overflow
+
     // Allocate message variable
-    int msgSize = strlen ( date ) + strlen( va_msg ) + strlen( strerror( errno ) ) + 50;  // 50 char buffer to prevent overflow
     char* msg = (char*)malloc( msgSize );
 
     // Used to hold the current printing color
@@ -103,6 +112,7 @@ void writeLog( int loglvl, const char* str, ... ) {
     memset( outColor, '\0', 6 );
     // Set default color to 'Normal'
     strncpy( outColor, COL_NORM, strlen( COL_NORM ) );
+
 
     // Prepare message based on logging level and debug level
     if( loglvl < SIMPLOG_INFO ){
@@ -116,6 +126,11 @@ void writeLog( int loglvl, const char* str, ... ) {
 
         // Append args string to output message
         sprintf( msg + strlen( msg ), "%s\n", va_msg );
+
+        // Check if the current message should be wrapped
+        if( lineWrap && strlen( msg ) > 80 ) {
+            wrapLines( msg, msgSize );
+        }
 
         // If errno is anything other than "Success", write it to the log.
         if( errno ) {
@@ -134,6 +149,8 @@ void writeLog( int loglvl, const char* str, ... ) {
     } else {
         // Used to check if a valid combination of log level and debug level exists
         bool valid = true;
+        // Used to check if we should try wrapping lines or not
+        bool wrap  = true;
 
         // Check loglvl/dbgLevel and add appropriate name to message
         if( loglvl == SIMPLOG_INFO ) {
@@ -154,6 +171,8 @@ void writeLog( int loglvl, const char* str, ... ) {
         } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
             strncpy( outColor, COL_TRACE, strlen( COL_TRACE ) );
             sprintf( msg, "%s\tTRACE : ", date );
+            // Traces are pre-formatted.  Don't attempt to wrap the lines
+            wrap = false;
         } else {
             // Don't print anything
             valid = false;
@@ -163,6 +182,11 @@ void writeLog( int loglvl, const char* str, ... ) {
         if( valid ) {
             // Append args string to output message
             sprintf( msg + strlen( msg ), "%s\n", va_msg );
+
+            // Check if the current message should be wrapped
+            if( lineWrap && wrap && strlen( msg ) > 80 ) {
+                wrapLines( msg, msgSize );
+            }
 
             // Write message to log
             write( log, msg, strlen( msg ) );
@@ -347,7 +371,8 @@ void setLogDebugLevel( int level ) {
     const char* file - desired log output file
 */
 void setLogFile( const char* file ) {
-    logFile = file;
+    memset( logFile, 0, 255 );
+    strcpy( logFile, file );
     writeLog( SIMPLOG_LOGGER, "Log file set to '%s'", logFile );
 }
 
@@ -362,6 +387,11 @@ void setLogFile( const char* file ) {
 void setLogSilentMode( bool silent ) {
     silentMode = silent;
     writeLog( SIMPLOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
+}
+
+void setLineWrap( bool wrap ) {
+    lineWrap = wrap;
+    writeLog( SIMPLOG_LOGGER, "Line wrapping %s", wrap ? "enabled" : "disabled" );
 }
 
 /*
@@ -402,28 +432,35 @@ void flushLog() {
 */
 void loadConfig( const char* config ) {
     // Settings variables (set to default values)
-    bool silentSetting = silentMode;
-    bool flushSetting = false;
-    int debugLevelSetting = dbgLevel;
+    bool silentSetting      = silentMode;
+    bool lineWrapSetting    = lineWrap;
+    bool flushSetting       = false;
+    int debugLevelSetting   = dbgLevel;
     char logfileSetting[255];
     strcpy( logfileSetting, logFile );
 
-    // TODO Read settings
-    /*FILE* file = fopen( config, "r" );*/
+    // Open config file
     int fd = open( config, O_RDONLY );
     if( fd == -1 ) {
         writeLog( SIMPLOG_LOGGER, "Unable to open config file: '%s'", config );
         return;
     }
 
+    // Initial buffer size for reading settings
     int SETTINGS_BUFSIZE = 1024;
+    // Allocate settings buffer
     char* settingsBuffer = (char*)malloc( SETTINGS_BUFSIZE );
+    // Keep track of bytes read
     ssize_t bytesRead = 0;
+    // Read in the entire config file for processing
     while( ( bytesRead = read( fd + bytesRead, settingsBuffer, SETTINGS_BUFSIZE ) ) > 0 ) {
+        // If we read enough to fill the buffer, realloc it to twice its size
         if( bytesRead == SETTINGS_BUFSIZE ) {
             settingsBuffer = (char*)realloc( (void*)settingsBuffer, SETTINGS_BUFSIZE * 2 );
         }
     }
+    // Done reading. Close the file.
+    close( fd );
 
     // Line start, split, and end incices for each line read
     int startL  = 0;
@@ -462,6 +499,8 @@ void loadConfig( const char* config ) {
                 silentSetting = boolVal;
             } else if( strcmp( var, "flush" ) == 0 ) {
                 flushSetting = boolVal;
+            } else if( strcmp( var, "wrap" ) == 0 ) {
+                lineWrapSetting = boolVal;
             } else if( strcmp( var, "debug" ) == 0 ) {
                 debugLevelSetting = atoi( val );
             } else if( strcmp( var, "logfile" ) == 0 ) {
@@ -475,7 +514,8 @@ void loadConfig( const char* config ) {
 
     // Apply all settings
     if( silentSetting ) {
-        logFile = logfileSetting;
+        memset( logFile, 0, 255 );
+        strcpy( logFile, logfileSetting );
     } else {
         setLogFile( logfileSetting );
     }
@@ -483,8 +523,8 @@ void loadConfig( const char* config ) {
         flushLog();
     }
     setLogSilentMode( silentSetting );
+    setLineWrap( lineWrapSetting );
     setLogDebugLevel( debugLevelSetting );
-
 }
 
 /*
@@ -571,11 +611,11 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     bool error = false;
 
     // Check if we are running on Mac OS or not, and select appropriate command
-    char* command;
+    const char* command;
     #ifdef __APPLE__
         // Check if 'gaddr2line' function is available, if not exit
         if( !system( "which gaddr2line > /dev/null 2>&1" ) ) {
-            command = "gaddr2line -Cfspe";
+            command = "gaddr2line -Cfispe";
             pid_t pid = getpid();
             int path_length = proc_pidpath( pid, exe_path, sizeof( exe_path ) );
             if( path_length <= 0 ) {
@@ -590,7 +630,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     #else
         // Check if 'addr2line' function is available, if not exit
         if( !system( "which addr2line > /dev/null 2>&1" ) ) {
-            command = "addr2line -Cfspe";
+            command = "addr2line -Cfispe";
             int path_length = readlink( "/proc/self/exe", exe_path, sizeof( exe_path ) );
             if(  path_length <= 0 ) {
                 writeLog( SIMPLOG_LOGGER, "Unable to get execution path. Defaulting to standard backtrace." );
@@ -618,7 +658,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     // Evaluate all addresses
     for( int i = 0; i < array_size; i++ ) {
         // Compose the complete command to execute
-        sprintf( command_string, "%s %s %X 2>/dev/null", command, exe_path, (unsigned int)addresses[i] );
+        sprintf( command_string, "%s \"%s\" %X 2>/dev/null", command, exe_path, (unsigned int)(uintptr_t)addresses[i] );
 
         // Execute the command
         FILE* line = popen( command_string, "r" );
@@ -669,5 +709,86 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     return backtrace_strings;
 }
 
+/*
+    Wraps the message into multiple 80 character lines.
+
+    Input:
+    char* msg    - The message variable to wrap
+    int msgSize  - The maximum message size
+ */
+static void wrapLines( char* msg, int msgSize ) {
+    // used to ensure consistent alignment between terminal and log file
+    char* indentedLineSpacing = (char*)malloc( 32 );
+    memset( indentedLineSpacing, ' ', 32 );
+    indentedLineSpacing[30] = '\t';
+    indentedLineSpacing[31] = 0;
+
+    // Temp buffer to hold the newly constructed message
+    char tempBuf[msgSize];
+    memset( tempBuf, 0, msgSize );
+
+    // Used to keep track of how much is read from message for each line
+    int lineFeedSize = 80;
+
+    // copy first 80 characters from message
+    strncpy( tempBuf, msg, lineFeedSize );
+
+    // Iterate through the message to wrap all lines
+    for( int i = lineFeedSize; i < strlen( msg ); i += lineFeedSize ) {
+        // Check if the current line (including whitespace) is over 80 characters
+        if( strlen( msg + i ) + strlen( indentedLineSpacing ) > 80 ) {
+            // Get the position of the last space in the line
+            char* returnPos = strrchr( tempBuf, ' ' );
+            // Replace the space with a newline
+            returnPos[0] = '\n';
+
+            // Temp buffer to store the text after the space
+            char wrapText[255];
+            // Copy the text that was after the space into the buffer
+            strcpy( wrapText, returnPos + 1 );
+
+            // Write indent spacing for this line, and append the
+            // wrapped text from after the space
+            sprintf( returnPos + 1, "%s%s", indentedLineSpacing, wrapText );
+
+            // Calculate how much to copy in from the message
+            lineFeedSize = ( strlen( msg + i ) < 80 ? strlen( msg + i ) : 80 )  - strlen( indentedLineSpacing ) - strlen( wrapText );
+            // Copy from the message
+            strncpy( returnPos + strlen( returnPos ), msg + i, lineFeedSize );
+        } else if( strlen( strrchr( tempBuf, '\n' ) ) + strlen( msg + i ) > 80  ) {
+            // Get the position of the last space in the line
+            char* returnPos = strrchr( tempBuf, ' ' );
+            // Replace the space with a newline
+            returnPos[0] = '\n';
+
+            // Temp buffer to store the text after the space
+            char wrapText[255];
+            // Copy the text that was after the space into the buffer
+            strcpy( wrapText, returnPos + 1 );
+
+            // Write indent spacing for this line, and append the
+            // wrapped text from after the space
+            sprintf( returnPos + 1, "%s%s", indentedLineSpacing, wrapText );
+
+            // Copy from the message
+            strncpy( returnPos + strlen( returnPos ), msg + i, strlen( msg + i ) );
+        } else {
+            // Copy the last part of the messaage
+            strncpy( tempBuf + strlen( tempBuf ), msg + i, strlen( msg + i ) );
+        }
+    }
+
+    // Copy the new message back into the message variable
+    strncpy( msg, tempBuf, msgSize );
+
+    // Ensure there is a newline at the end of the new message
+    if( msg[strlen( msg ) - 1] != '\n' ) {
+        sprintf( msg + strlen( msg ), "\n" );
+    }
+
+    // Free the line spacing var
+    free( indentedLineSpacing );
+}
+
 // Put all public functions into their own "namespace"
-simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, flushLog, loadConfig };
+simplog_namespace const simplog = { writeLog, writeStackTrace, setLogDebugLevel, setLogFile, setLogSilentMode, setLineWrap, flushLog, loadConfig };
