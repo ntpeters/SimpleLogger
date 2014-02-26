@@ -100,7 +100,12 @@ void writeLog( int loglvl, const char* str, ... ) {
     // Calculate total size of the string
     int stringSize = strlen( date ) + strlen( va_msg ) + 10;
     // Calculate space used by line wraps
-    int lineWrapSize = ( 32 * ( stringSize / 80 ) );
+    int lineWrapSize = 0;
+    // Only increase message allocation size if line wrapping is enabled
+    if( lineWrap ) {
+        lineWrapSize = ( 32 * ( stringSize / 80 ) );
+    }
+    
     // Calculate the total message size
     int msgSize = stringSize + lineWrapSize + strlen( strerror( errno ) ) + 50;  // 50 char buffer to prevent overflow
 
