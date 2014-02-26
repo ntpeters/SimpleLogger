@@ -115,9 +115,9 @@ There are individual functions to set each of these parameters manually as well.
     3  : Debug-Verbose  - All debug messages
 
     Input:
-    int loglvl      - The desired output logging level.  See above table for levels.
-    const char* str - The message to be output. This is a format string.
-    ...             - Variable length list of arguments to be used with the format string (optional).
+    int loglvl      - The desired output logging level.  See above table for levels
+    const char* str - The message to be output. This is a format string
+    ...             - Variable length list of arguments to be used with the format string (optional)
 */
 void writeLog( int loglvl, const char* str, ... );
 ```
