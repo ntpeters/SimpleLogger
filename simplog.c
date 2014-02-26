@@ -168,6 +168,8 @@ void writeLog( int loglvl, const char* str, ... ) {
         } else if( loglvl == SIMPLOG_LOGGER && dbgLevel >= SIMPLOG_DEBUG ) {
             strncpy( outColor, COL_LOGGER, strlen( COL_LOGGER ) );
             sprintf( msg, "%s\tLOG   : ", date );
+            // Internal logger messages should appear as they are. Don't wrap
+            wrap = false;
         } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
             strncpy( outColor, COL_TRACE, strlen( COL_TRACE ) );
             sprintf( msg, "%s\tTRACE : ", date );
@@ -442,7 +444,13 @@ void loadConfig( const char* config ) {
     // Open config file
     int fd = open( config, O_RDONLY );
     if( fd == -1 ) {
+        // Write error message
         writeLog( SIMPLOG_LOGGER, "Unable to open config file: '%s'", config );
+
+        // Clean errno so it's not mistakenly printed for other messages
+        errno = 0;
+
+        // Exit function early. No log file to read.
         return;
     }
 
