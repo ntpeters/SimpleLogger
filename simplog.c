@@ -391,6 +391,14 @@ void setLogSilentMode( bool silent ) {
     writeLog( SIMPLOG_LOGGER, "Silent mode %s", silent ? "enabled" : "disabled" );
 }
 
+/*
+    Enables/Disables line wrapping.
+    When line wrapping is enabled, lines that are over 80 characters will be 
+    wrapped multiple times so that each line is below 80 characters.
+
+    Input:
+    bool wrap - Desired state of line wrapping: true = Enabled (default), false = Disabled
+*/
 void setLineWrap( bool wrap ) {
     lineWrap = wrap;
     writeLog( SIMPLOG_LOGGER, "Line wrapping %s", wrap ? "enabled" : "disabled" );
@@ -428,6 +436,14 @@ void flushLog() {
 
 /*
     Loads logger configuration settings from the given config file.
+
+    Supported settings are:
+
+    silent  - Enables/disables silent mode (see setLogSilentMode)
+    wrap    - Enables/disables line wrapping (see setLineWrap)
+    flush   - Determines if the log file should be cleared (see flushLog)
+    debug   - Sets the debug level (see setLogDebugLevel)
+    logfile - Sets the path to the log file (see setLogFile)
 
     Input:
     const char* config - Logger config file to parse and load settings from
