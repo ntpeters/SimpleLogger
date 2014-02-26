@@ -9,6 +9,7 @@ with date/time stamp to standard out and a defined log file.
 
 * Time/date stamped output
 * Console output is colored according to the level of the log message
+* Error levels automatically print errno if it has been set
 * Variable length argument list
 * Supports writing of stacktraces.  Stacktraces are "prettyfied" to give the
 user an easiear to read trace
