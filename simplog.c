@@ -398,7 +398,7 @@ void setLogSilentMode( bool silent ) {
 
 /*
     Enables/Disables line wrapping.
-    When line wrapping is enabled, lines that are over 80 characters will be 
+    When line wrapping is enabled, lines that are over 80 characters will be
     wrapped multiple times so that each line is below 80 characters.
 
     Input:
@@ -479,6 +479,7 @@ void loadConfig( const char* config ) {
     int SETTINGS_BUFSIZE = 1024;
     // Allocate settings buffer
     char* settingsBuffer = (char*)malloc( SETTINGS_BUFSIZE );
+    memset( settingsBuffer, 0, SETTINGS_BUFSIZE );
     // Keep track of bytes read
     ssize_t bytesRead = 0;
     // Read in the entire config file for processing
@@ -540,6 +541,9 @@ void loadConfig( const char* config ) {
             startL = i + 1;
         }
     }
+
+    // Done parsing. Free setting buffer
+    free( settingsBuffer );
 
     // Apply all settings
     if( silentSetting ) {
