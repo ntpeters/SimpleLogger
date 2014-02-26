@@ -569,47 +569,12 @@ void loadConfig( const char* config ) {
 static char* getDateString() {
     // Initialize and get current time
     time_t t = time( NULL );
-    struct tm *timeinfo = localtime( &t );
 
     // Allocate space for date string
     char* date = (char*)malloc( 100 );
 
-    // Get each component of time struct that we care about
-    int year    = timeinfo->tm_year + 1900;
-    int month   = timeinfo->tm_mon + 1;
-    int day     = timeinfo->tm_mday;
-    int hour    = timeinfo->tm_hour;
-    int min     = timeinfo->tm_min;
-    int sec     = timeinfo->tm_sec;
-
-    sprintf( date, "[%d-", year );
-
-    // Add zero for single digit values
-    if( month < 10 ) {
-        sprintf( date + strlen( date ), "0%d-", month );
-    } else {
-        sprintf( date + strlen( date ), "%d-", month );
-    }
-    if( day < 10 ) {
-        sprintf( date + strlen( date ), "0%d ", day );
-    } else {
-        sprintf( date + strlen( date ), "%d ", day );
-    }
-    if( hour < 10 ) {
-        sprintf( date + strlen( date ), "0%d:", hour );
-    } else {
-        sprintf( date + strlen( date ), "%d:", hour );
-    }
-    if( min < 10 ) {
-        sprintf( date + strlen( date ), "0%d:", min );
-    } else {
-        sprintf( date + strlen( date ), "%d:", min );
-    }
-    if( sec < 10 ) {
-        sprintf( date + strlen( date ), "0%d]", sec );
-    } else {
-        sprintf( date + strlen( date ), "%d]", sec );
-    }
+    // Format the time correctly
+    strftime(date, 100, "[%F %T]", localtime(&t));
 
     return date;
 }
