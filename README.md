@@ -185,3 +185,29 @@ void setLineWrap( bool wrap );
 */
 void flushLog();
 ```
+
+##Frequently Asked Questions
+
+**Q:  There are already a ton of loggers out there.  Why make another one?**
+
+A:  The main idea behind this project was a learning experience in C while making something
+    somewhat useful.  I just wanted to make a logger that is simple and easy to use, and has output
+    that is relatively pleasant to look at.
+    
+**Q:  Why don't you have feature X or Y?**
+
+A:  As I said, the goal was to create a simple and easy to use logger.  As such, there are probably
+    some features this logger doesn't have when compared to some more feature rich alternatives.
+    
+**Q:  You did something stupid/improper in your code.**
+
+A:  If there is something dumb or not proper that I did, please open an issue and let me know!
+    Since this was largely a learning project I would love to hear about anything bad I've done here!
+    
+**Q:  I found a bug / I'm having problems**
+
+A:  If you either found a bug or are having problems with this logger, please open an issue describing
+    your dilema and I'll take a look!
+    
+##Promotion
+If you like SimpleLogger, then please star it on GitHub and share it with others!
