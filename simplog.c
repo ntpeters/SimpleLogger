@@ -31,15 +31,15 @@
 #define SIMPLOG_TRACE   5
 
 // Define colors for printing to terminal
-#define COL_NORM    "\x1B[0m"   // Normal
-#define COL_FATAL   "\x1B[31m"  // Red
-#define COL_ERROR   "\x1B[91m"  // Light Red
-#define COL_INFO    "\x1B[37m"  // White
-#define COL_WARN    "\x1B[33m"  // Yellow
-#define COL_DEBUG   "\x1B[94m"  // Light Blue
-#define COL_VERBOSE "\x1B[36m"  // Cyan
-#define COL_LOGGER  "\x1B[90m"  // Dark Grey
-#define COL_TRACE   "\x1B[95m"  // Light Magenta
+static char* COL_NORM    = "\x1B[0m";   // Normal
+static char* COL_FATAL   = "\x1B[31m";  // Red
+static char* COL_ERROR   = "\x1B[91m";  // Light Red
+static char* COL_INFO    = "\x1B[37m";  // White
+static char* COL_WARN    = "\x1B[33m";  // Yellow
+static char* COL_DEBUG   = "\x1B[94m";  // Light Blue
+static char* COL_VERBOSE = "\x1B[36m";  // Cyan
+static char* COL_LOGGER  = "\x1B[90m";  // Dark Grey
+static char* COL_TRACE   = "\x1B[95m";  // Light Magenta
 
 // Logger settings constants
 static int  dbgLevel        = SIMPLOG_DEBUG;    // Default Logging level
@@ -112,20 +112,17 @@ void writeLog( int loglvl, const char* str, ... ) {
     // Allocate message variable
     char* msg = (char*)malloc( msgSize );
 
-    // Used to hold the current printing color
-    char outColor[6];
-    memset( outColor, '\0', 6 );
-    // Set default color to 'Normal'
-    strncpy( outColor, COL_NORM, strlen( COL_NORM ) );
+    // Used to hold the current printing color, default to 'Normal'
+    char *outColor = COL_NORM;
 
 
     // Prepare message based on logging level and debug level
     if( loglvl < SIMPLOG_INFO ){
         if( loglvl == SIMPLOG_FATAL ) {
-            strncpy( outColor, COL_FATAL, strlen( COL_FATAL ) );
+            outColor = COL_FATAL;
             sprintf( msg, "%s\tFATAL : ", date );   // -2: Fatal
         } else if( loglvl == SIMPLOG_ERROR ) {
-            strncpy( outColor, COL_ERROR, strlen( COL_ERROR ) );
+            outColor = COL_ERROR;
             sprintf( msg, "%s\tERROR : ", date );   // -1: Error
         }
 
@@ -159,24 +156,24 @@ void writeLog( int loglvl, const char* str, ... ) {
 
         // Check loglvl/dbgLevel and add appropriate name to message
         if( loglvl == SIMPLOG_INFO ) {
-            strncpy( outColor, COL_INFO, strlen( COL_INFO ) );
+            outColor = COL_INFO;
             sprintf( msg, "%s\tINFO  : ", date );      // 0: Info
         } else if( loglvl == SIMPLOG_WARN && dbgLevel >= SIMPLOG_WARN ) {
-            strncpy( outColor, COL_WARN, strlen( COL_WARN ) );
+            outColor = COL_WARN;
             sprintf( msg, "%s\tWARN  : ", date );      // 1: Warning
         } else if( loglvl == SIMPLOG_DEBUG && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_DEBUG, strlen( COL_DEBUG ) );
+            outColor = COL_DEBUG;
             sprintf( msg, "%s\tDEBUG : ", date );      // 2: Debug
         } else if( loglvl == SIMPLOG_VERBOSE && dbgLevel >= SIMPLOG_VERBOSE ) {
-            strncpy( outColor, COL_VERBOSE, strlen( COL_VERBOSE ) );
+            outColor = COL_VERBOSE;
             sprintf( msg, "%s\tDEBUG : ", date );      // 3: Verbose
         } else if( loglvl == SIMPLOG_LOGGER && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_LOGGER, strlen( COL_LOGGER ) );
+            outColor = COL_LOGGER;
             sprintf( msg, "%s\tLOG   : ", date );
             // Internal logger messages should appear as they are. Don't wrap
             wrap = false;
         } else if( loglvl == SIMPLOG_TRACE && dbgLevel >= SIMPLOG_DEBUG ) {
-            strncpy( outColor, COL_TRACE, strlen( COL_TRACE ) );
+            outColor = COL_TRACE;
             sprintf( msg, "%s\tTRACE : ", date );
             // Traces are pre-formatted.  Don't attempt to wrap the lines
             wrap = false;
@@ -569,12 +566,47 @@ void loadConfig( const char* config ) {
 static char* getDateString() {
     // Initialize and get current time
     time_t t = time( NULL );
+    struct tm *timeinfo = localtime( &t );
 
     // Allocate space for date string
     char* date = (char*)malloc( 100 );
 
-    // Format the time correctly
-    strftime(date, 100, "[%F %T]", localtime(&t));
+    // Get each component of time struct that we care about
+    int year    = timeinfo->tm_year + 1900;
+    int month   = timeinfo->tm_mon + 1;
+    int day     = timeinfo->tm_mday;
+    int hour    = timeinfo->tm_hour;
+    int min     = timeinfo->tm_min;
+    int sec     = timeinfo->tm_sec;
+
+    sprintf( date, "[%d-", year );
+
+    // Add zero for single digit values
+    if( month < 10 ) {
+        sprintf( date + strlen( date ), "0%d-", month );
+    } else {
+        sprintf( date + strlen( date ), "%d-", month );
+    }
+    if( day < 10 ) {
+        sprintf( date + strlen( date ), "0%d ", day );
+    } else {
+        sprintf( date + strlen( date ), "%d ", day );
+    }
+    if( hour < 10 ) {
+        sprintf( date + strlen( date ), "0%d:", hour );
+    } else {
+        sprintf( date + strlen( date ), "%d:", hour );
+    }
+    if( min < 10 ) {
+        sprintf( date + strlen( date ), "0%d:", min );
+    } else {
+        sprintf( date + strlen( date ), "%d:", min );
+    }
+    if( sec < 10 ) {
+        sprintf( date + strlen( date ), "0%d]", sec );
+    } else {
+        sprintf( date + strlen( date ), "%d]", sec );
+    }
 
     return date;
 }
