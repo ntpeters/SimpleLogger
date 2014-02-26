@@ -7,6 +7,7 @@ with date/time stamp to standard out and a defined log file.
 
 ##Features
 
+* Time/date stamped output
 * Console output is colored according to the level of the log message
 * Variable length argument list
 * Supports writing of stacktraces.  Stacktraces are "prettyfied" to give the
