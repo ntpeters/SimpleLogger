@@ -1,5 +1,7 @@
 #SimpleLogger
 
+####NOTE: This project was made primarily as a learning exercise, and will neither be maintained nor should be used in a production environment. (See [Caveats](#caveats) for more info)
+
 A basic, easy to use logger for output of messages at various logging levels
 with date/time stamp to standard out and a defined log file.
 
@@ -15,6 +17,11 @@ with date/time stamp to standard out and a defined log file.
 user an easiear to read trace
 * Has an option to wrap messages over 80 characters to multiple lines
 * Written in C, for use in C and C++ projects
+
+##Caveats
+* Not thread safe
+* Not signal safe
+* Currently does not have millisecond granularity in timestamp
 
 ##Building with SimpleLogger
 
