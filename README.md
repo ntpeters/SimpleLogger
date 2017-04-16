@@ -1,4 +1,4 @@
-#SimpleLogger
+# SimpleLogger
 
 **NOTE: This project was made primarily as a learning exercise, and will neither be maintained nor should be used in a production environment. (See [Caveats](#caveats) for more info)**
 
@@ -7,7 +7,7 @@ with date/time stamp to standard out and a defined log file.
 
 ![Example Screenshot](http://i.imgur.com/1aMpk6I.png)
 
-##Features
+## Features
 
 * Time/date stamped output
 * Console output is colored according to the level of the log message
@@ -18,12 +18,12 @@ user an easiear to read trace
 * Has an option to wrap messages over 80 characters to multiple lines
 * Written in C, for use in C and C++ projects
 
-##Caveats
+## Caveats
 * Not thread safe
 * Not signal safe
 * Currently does not have millisecond granularity in timestamp
 
-##Building with SimpleLogger
+## Building with SimpleLogger
 
 First be sure to compile `libsimplog.a`:
 ```
@@ -49,7 +49,7 @@ Finally, just include `simplog.h` in your project files:
 
 You're all set!  Check out the Usage section below for how to use SimpleLogger in your program.
 
-##Usage
+## Usage
 
 Each message must be accompanied by a level. Supported levels are:
 ```
@@ -98,9 +98,9 @@ logfile=<logfile-path>    // Set the path to the logfile to output to
 ```
 There are individual functions to set each of these parameters manually as well.  See the documentation below.
 
-##Documentation
+## Documentation
 
-###writeLog
+### writeLog
 ```
 /*
     Writes output to defined logfile and standard out/err with
@@ -129,7 +129,7 @@ There are individual functions to set each of these parameters manually as well.
 void writeLog( int loglvl, const char* str, ... );
 ```
 
-###writeStackTrace
+### writeStackTrace
 ```
 /*
     Prints the stacktrace to logs for the current location in the program.
@@ -140,7 +140,7 @@ void writeLog( int loglvl, const char* str, ... );
 void writeStackTrace();
 ```
 
-###loadConfig
+### loadConfig
 ```
 /*
     Loads logger configuration settings from the given config file.
@@ -159,7 +159,7 @@ void writeStackTrace();
 
 void loadConfig( const char* config );
 ```
-###setLogDebugLevel
+### setLogDebugLevel
 ```
 /*
     Sets the desired debug level for writing logs.
@@ -176,7 +176,7 @@ void loadConfig( const char* config );
 void setLogDebugLevel( int level );
 ```
 
-###setLogFile
+### setLogFile
 ```
 /*
     Sets the filename for log output.
@@ -187,7 +187,7 @@ void setLogDebugLevel( int level );
 void setLogFile( const char* file );
 ```
 
-###setLogSilentMode
+### setLogSilentMode
 ```
 /*
     Enables/Disables silent mode.
@@ -200,7 +200,7 @@ void setLogFile( const char* file );
 void setLogSilentMode( bool silent );
 ```
 
-###setLineWrap
+### setLineWrap
 ```
 /*
     Enables/Disables line wrapping.
@@ -213,7 +213,7 @@ void setLogSilentMode( bool silent );
 void setLineWrap( bool wrap );
 ```
 
-###flushLog
+### flushLog
 ```
 /*
     Flushes the contents of the logfile by deleting it and recreating
@@ -222,7 +222,7 @@ void setLineWrap( bool wrap );
 void flushLog();
 ```
 
-##Frequently Asked Questions
+## Frequently Asked Questions
 
 **Q:  There are already a ton of loggers out there.  Why make another one?**
 
@@ -245,5 +245,5 @@ A:  If there is something dumb or not proper that I did, please open an issue an
 A:  If you either found a bug or are having problems with this logger, please open an issue describing
     your dilema and I'll take a look!
     
-##Promotion
+## Promotion
 If you like SimpleLogger, then please star it on GitHub and share it with others!
