@@ -76,6 +76,8 @@ static void wrapLines( char* msg, int msgSize );
     const char* str - The message to be output. This is a format string.
     ...             - Variable length list of arguments to be used with the format string (optional).
 */
+
+//This is a void function which return nothing but accept two parameters 
 void writeLog( int loglvl, const char* str, ... ) {
     // Prepare variable length args list
     va_list args;
@@ -218,6 +220,7 @@ void writeLog( int loglvl, const char* str, ... ) {
     free( va_msg );
 
     // Check if the output was truncated
+     //some of string functions used here
     if( va_string_size > ( strlen( str ) + max_va_list_size ) ) {
         // get how many bytes the output was truncated by
         int truncated_size = va_string_size - ( strlen( str ) + max_va_list_size );
@@ -708,7 +711,7 @@ static char** getPrettyBacktrace( void* addresses[], int array_size ) {
     Wraps the message into multiple 80 character lines.
 
     Input:
-    char* msg    - The message variable to wrap
+    char* msg    - The message variable to wrap and it is a pointer
     int msgSize  - The maximum message size
  */
 static void wrapLines( char* msg, int msgSize ) {
@@ -726,6 +729,7 @@ static void wrapLines( char* msg, int msgSize ) {
     int lineFeedSize = 80;
 
     // copy first 80 characters from message
+     //strncpy is a string function
     strncpy( tempBuf, msg, lineFeedSize );
 
     // Iterate through the message to wrap all lines
